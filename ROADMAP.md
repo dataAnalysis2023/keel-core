@@ -66,12 +66,20 @@ CLI funcional end-to-end: mensaje + remitente → sugerencia de respuesta vía O
 - [x] `keel update` — git pull + reinstalación de dependencias
 - [x] App en ~/.local/share/keel-core/, binario en ~/.local/bin/keel
 
-## Hito 7 — Por definir
+## Hito 7 — keel conversar (completado 2026-06-26)
+
+- [x] Flujo completo: mensaje → tono → contexto → sugerencia → editor → guardar
+- [x] Soporta mensaje como argumento, stdin piped, o entrada interactiva
+- [x] `--no-editar` y `--no-guardar` para uso programático/scripts
+- [x] `keel.engine.sesion` como módulo puro testeable sin TTY
+- [x] 46/46 tests verde
+
+## Hito 8 — Por definir
 
 Opciones:
-- `keel conversar` — flujo interactivo completo con edición en $EDITOR
 - Cifrado SQLCipher para ~/.keel/
 - Conector de mensajería (primer canal)
+- GitHub release + GitHub Actions CI
 
 ## Diferido / fuera de scope inicial
 

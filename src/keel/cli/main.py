@@ -219,6 +219,108 @@ def status() -> None:
 
 
 @app.command()
+def conversar(
+    remitente: str = typer.Option(..., "--remitente", "-r", help="Nombre del remitente"),
+    mensaje: str = typer.Argument(default="", help="Mensaje (opcional — stdin si no se da)"),
+    modelo: str = typer.Option(None, "--modelo", "-m", help="Modelo Ollama"),
+    sin_vectores: bool = typer.Option(False, "--sin-vectores"),
+    no_editar: bool = typer.Option(False, "--no-editar", help="Omite el paso de edición en $EDITOR"),
+    no_guardar: bool = typer.Option(False, "--no-guardar"),
+) -> None:
+    """Flujo interactivo completo: mensaje → sugerencia → edición → guardado."""
+    from keel.storage.local import cargar_perfil, cargar_persona
+    from keel.engine.sesion import ejecutar, guardar, abrir_en_editor, leer_mensaje_stdin, generar_resumen_automatico
+    from keel.llm.ollama import OllamaLLM
+    from rich.prompt import Prompt, Confirm
+    from rich.rule import Rule
+
+    # ── 1. Cargar perfil ──────────────────────────────────────────────────────
+    try:
+        perfil = cargar_perfil()
+    except FileNotFoundError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1)
+
+    persona = cargar_persona(remitente)
+    llm = OllamaLLM(modelo=modelo) if modelo else OllamaLLM()
+
+    if not llm.disponible():
+        console.print("[red]Ollama no disponible. Ejecuta: ollama serve[/red]")
+        raise typer.Exit(1)
+
+    embedder = None
+    if not sin_vectores:
+        try:
+            embedder = _embedder()
+        except Exception:
+            pass
+
+    # ── 2. Obtener mensaje ────────────────────────────────────────────────────
+    if not mensaje:
+        if not no_editar:
+            console.print(f"\n[dim]Escribe el mensaje de {remitente} (Enter×2 o Ctrl+D para terminar):[/dim]")
+        mensaje = leer_mensaje_stdin()
+
+    if not mensaje:
+        console.print("[red]Mensaje vacío. Cancela.[/red]")
+        raise typer.Exit(1)
+
+    # ── 3. Mostrar contexto ──────────────────────────────────────────────────
+    console.print()
+    console.print(Rule(f"[dim]Conversación con {remitente}[/dim]"))
+
+    if persona.historial_conversaciones or persona.promesas_pendientes:
+        detalles = []
+        if persona.historial_conversaciones:
+            detalles.append(f"{len(persona.historial_conversaciones)} conversación(es) registrada(s)")
+        if persona.promesas_pendientes:
+            detalles.append(f"{len(persona.promesas_pendientes)} promesa(s) pendiente(s)")
+        console.print(f"[dim]  {persona.nombre}: {' · '.join(detalles)}[/dim]")
+
+    # ── 4. Generar sugerencia ─────────────────────────────────────────────────
+    console.print(f"\n[dim]Tono detectado: {__import__('keel.engine.presencia', fromlist=['analizar_tono']).analizar_tono(mensaje).resumen}[/dim]")
+    modo = "semántico" if embedder else ("cronológico" if persona.historial_conversaciones else "sin historial")
+    console.print(f"[dim]Contexto: {modo} | Generando...[/dim]\n")
+
+    resultado = ejecutar(perfil, persona, mensaje, llm, embedder)
+
+    console.print(
+        Panel(
+            resultado.sugerencia,
+            title=f"[bold]Sugerencia para {remitente}[/bold]",
+            border_style="blue",
+        )
+    )
+
+    # ── 5. Edición en $EDITOR ─────────────────────────────────────────────────
+    texto_final = resultado.sugerencia
+    if not no_editar:
+        editar = Confirm.ask("\n¿Editar en $EDITOR?", default=False)
+        if editar:
+            texto_final = abrir_en_editor(resultado.sugerencia)
+            if texto_final != resultado.sugerencia:
+                console.print(
+                    Panel(texto_final, title="[bold]Texto editado[/bold]", border_style="green")
+                )
+
+    # ── 6. Guardar ────────────────────────────────────────────────────────────
+    if no_guardar:
+        return
+
+    guardar_sesion = Confirm.ask("\n¿Guardar esta conversación?", default=True)
+    if not guardar_sesion:
+        return
+
+    resumen_auto = generar_resumen_automatico(mensaje, texto_final)
+    resumen = Prompt.ask("Resumen para el historial", default=resumen_auto)
+    temas_raw = Prompt.ask("Temas (separados por coma, opcional)", default="")
+    temas = [t.strip() for t in temas_raw.split(",") if t.strip()]
+
+    guardar(persona, resumen, temas, embedder)
+    console.print(f"[green]✓ Guardado en el historial de {remitente}.[/green]\n")
+
+
+@app.command()
 def agenda() -> None:
     """Muestra todas las promesas pendientes de todas las personas."""
     from keel.storage.local import keel_dir
