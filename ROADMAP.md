@@ -58,13 +58,20 @@ CLI funcional end-to-end: mensaje + remitente → sugerencia de respuesta vía O
 - [x] MCP Prompt `keel_agenda_prompt` — agenda para revisar con el LLM
 - [x] 36/36 tests verde
 
-## Hito 6 — Por definir
+## Hito 6 — Instalador (completado 2026-06-26)
+
+- [x] `install.sh` — 8 pasos: Python check, Ollama check, fuente, venv, binario, PATH, init, verify
+- [x] Detecta instalación local vs descarga desde GitHub automáticamente
+- [x] `uninstall.sh` — elimina app, preserva datos de usuario en ~/.keel/
+- [x] `keel update` — git pull + reinstalación de dependencias
+- [x] App en ~/.local/share/keel-core/, binario en ~/.local/bin/keel
+
+## Hito 7 — Por definir
 
 Opciones:
-- `keel conversar` — flujo interactivo completo (edición en $EDITOR)
+- `keel conversar` — flujo interactivo completo con edición en $EDITOR
 - Cifrado SQLCipher para ~/.keel/
 - Conector de mensajería (primer canal)
-- Instalador de un comando (`curl | bash`)
 
 ## Diferido / fuera de scope inicial
 

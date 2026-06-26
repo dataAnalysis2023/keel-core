@@ -294,6 +294,43 @@ def contexto(
     )
 
 
+@app.command()
+def update() -> None:
+    """Actualiza keel-core a la última versión desde git."""
+    import subprocess
+    from pathlib import Path
+
+    app_dir = Path.home() / ".local" / "share" / "keel-core"
+    if not app_dir.exists():
+        console.print("[red]Instalación no encontrada en ~/.local/share/keel-core/[/red]")
+        console.print("[dim]Instala con: bash install.sh[/dim]")
+        raise typer.Exit(1)
+
+    if not (app_dir / ".git").exists():
+        console.print("[yellow]La instalación no tiene git — actualización manual necesaria.[/yellow]")
+        raise typer.Exit(1)
+
+    console.print("[dim]Actualizando desde git...[/dim]")
+    result = subprocess.run(
+        ["git", "pull", "--ff-only"],
+        cwd=app_dir,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        console.print(f"[red]git pull falló:\n{result.stderr}[/red]")
+        raise typer.Exit(1)
+
+    console.print(f"[dim]{result.stdout.strip()}[/dim]")
+
+    console.print("[dim]Reinstalando dependencias...[/dim]")
+    pip = app_dir / ".venv" / "bin" / "pip"
+    subprocess.run([str(pip), "install", "-e", ".", "--quiet"], cwd=app_dir, check=True)
+
+    console.print("[green]✓ keel-core actualizado.[/green]")
+    subprocess.run([str(app_dir / ".venv" / "bin" / "keel"), "status"])
+
+
 @app.command(name="mcp")
 def mcp_serve(
     transport: str = typer.Option("stdio", "--transport", "-t", help="stdio | sse"),
