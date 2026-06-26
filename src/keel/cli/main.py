@@ -218,5 +218,23 @@ def status() -> None:
     console.print()
 
 
+@app.command()
+def serve(
+    host: str = typer.Option("127.0.0.1", "--host", help="Dirección de escucha"),
+    port: int = typer.Option(7331, "--port", "-p", help="Puerto"),
+    reload: bool = typer.Option(False, "--reload", help="Hot-reload (solo desarrollo)"),
+) -> None:
+    """Inicia el servidor REST de keel-core en localhost:7331."""
+    import uvicorn
+    console.print(f"\n[bold]keel-core API[/bold] → http://{host}:{port}")
+    console.print(f"[dim]Documentación: http://{host}:{port}/docs[/dim]\n")
+    uvicorn.run(
+        "keel.api.app:app",
+        host=host,
+        port=port,
+        reload=reload,
+    )
+
+
 if __name__ == "__main__":
     app()

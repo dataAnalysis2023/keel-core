@@ -34,12 +34,12 @@ CLI funcional end-to-end: mensaje + remitente → sugerencia de respuesta vía O
 - [x] `keel remember` — agrega notas y promesas al grafo de relaciones + LanceDB
 - [x] `keel respond` indexa automáticamente cada conversación guardada
 
-## Hito 3 — Interfaz desktop (keel-app)
+## Hito 3 — API REST (completado 2026-06-26)
 
-- [ ] Evaluar Tauri vs Electron (preferencia: Tauri — más liviano, Rust + WebView)
-- [ ] Panel de sugerencia con edición inline
-- [ ] Vista del grafo de relaciones
-- [ ] API interna REST entre keel-core y keel-app
+- [x] FastAPI sobre keel-core: GET /status, GET+PUT /perfil, GET+POST /personas, POST /respond, POST /remember
+- [x] `keel serve` arranca el servidor en localhost:7331
+- [x] Documentación automática en /docs
+- [x] 20/20 tests verde
 
 ## Hito 4 — Conectividad MCP
 

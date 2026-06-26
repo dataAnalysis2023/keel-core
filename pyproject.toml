@@ -16,6 +16,8 @@ dependencies = [
     "rich>=13.0",
     "lancedb>=0.5",
     "fastembed>=0.3",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
 ]
 
 [project.optional-dependencies]
