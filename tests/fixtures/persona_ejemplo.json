@@ -1,0 +1,22 @@
+{
+  "nombre": "Carlos",
+  "rol": "socio de negocio",
+  "como_nos_conocemos": "colaboramos en proyectos cívicos desde 2023",
+  "tono_relacional": "informal",
+  "sensibilidades": ["puntualidad en entregas", "claridad en compromisos"],
+  "historial_conversaciones": [
+    {
+      "fecha": "2026-06-10",
+      "resumen": "Discutimos el roadmap del próximo trimestre",
+      "temas": ["roadmap", "prioridades"]
+    }
+  ],
+  "promesas_pendientes": [
+    {
+      "descripcion": "Enviar resumen del prototipo antes del viernes",
+      "fecha_compromiso": "2026-06-27"
+    }
+  ],
+  "ultima_interaccion": "2026-06-10",
+  "estado_actual": "esperando actualización del prototipo"
+}

@@ -1,0 +1,16 @@
+{
+  "nombre": "Juan Diego",
+  "voz": {
+    "tono": "directo y reflexivo",
+    "registro": "informal",
+    "vocabulario_frecuente": ["ecosistema", "prioridad", "impacto"],
+    "frases_caracteristicas": ["vamos con calma", "bien, sigamos"]
+  },
+  "valores": ["impacto social", "claridad", "compromiso"],
+  "contexto_vital": {
+    "rol": "fundador",
+    "organizacion": "Imagine Robots",
+    "momento_actual": "construcción del ecosistema de herramientas"
+  },
+  "historial_coherencia": []
+}
