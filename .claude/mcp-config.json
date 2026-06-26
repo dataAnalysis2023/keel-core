@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "keel": {
+      "command": "/Users/juandcs/Proyectos/keel-core/.venv/bin/keel",
+      "args": ["mcp"],
+      "env": {}
+    }
+  }
+}

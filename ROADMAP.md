@@ -41,11 +41,22 @@ CLI funcional end-to-end: mensaje + remitente → sugerencia de respuesta vía O
 - [x] Documentación automática en /docs
 - [x] 20/20 tests verde
 
-## Hito 4 — Conectividad MCP
+## Hito 4 — Conector MCP (completado 2026-06-26)
 
-- [ ] Servidor MCP genérico en keel-core
-- [ ] Primer conector de mensajería (a definir — no WhatsApp en esta fase)
-- [ ] Cifrado de base de datos (SQLCipher via SQLCipher3)
+- [x] Servidor MCP con FastMCP (mcp 1.28.1)
+- [x] 5 herramientas: keel_get_context, keel_respond, keel_remember, keel_list_personas, keel_get_persona
+- [x] 2 recursos: keel://perfil, keel://personas
+- [x] `keel mcp` arranca el servidor en stdio (compatible con Claude Code)
+- [x] .claude/mcp-config.json listo para conectar
+- [x] 27/27 tests verde
+
+## Hito 5 — Por definir
+
+Opciones:
+- Cifrado SQLCipher para ~/.keel/
+- Comando `keel conversar` — flujo interactivo completo con edición
+- Conector de mensajería (primer canal, no WhatsApp)
+- Instalador de un comando (`curl | bash`)
 
 ## Diferido / fuera de scope inicial
 

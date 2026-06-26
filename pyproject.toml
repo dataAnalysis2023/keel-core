@@ -18,6 +18,7 @@ dependencies = [
     "fastembed>=0.3",
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
+    "mcp[cli]>=1.0",
 ]
 
 [project.optional-dependencies]

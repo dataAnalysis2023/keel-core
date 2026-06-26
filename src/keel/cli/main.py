@@ -218,6 +218,15 @@ def status() -> None:
     console.print()
 
 
+@app.command(name="mcp")
+def mcp_serve(
+    transport: str = typer.Option("stdio", "--transport", "-t", help="stdio | sse"),
+) -> None:
+    """Inicia el servidor MCP (stdio para Claude Code, sse para otros clientes)."""
+    from keel.mcp.server import mcp as mcp_server
+    mcp_server.run(transport=transport)
+
+
 @app.command()
 def serve(
     host: str = typer.Option("127.0.0.1", "--host", help="Dirección de escucha"),
