@@ -50,12 +50,20 @@ CLI funcional end-to-end: mensaje + remitente → sugerencia de respuesta vía O
 - [x] .claude/mcp-config.json listo para conectar
 - [x] 27/27 tests verde
 
-## Hito 5 — Por definir
+## Hito 5 — Utilidades diarias y MCP Prompts (completado 2026-06-26)
+
+- [x] `keel agenda` — tabla de compromisos pendientes con detección de vencidos
+- [x] `keel contexto` — muestra el contexto de una persona sin generar respuesta
+- [x] MCP Prompt `keel_responder` — template para Claude Code
+- [x] MCP Prompt `keel_agenda_prompt` — agenda para revisar con el LLM
+- [x] 36/36 tests verde
+
+## Hito 6 — Por definir
 
 Opciones:
+- `keel conversar` — flujo interactivo completo (edición en $EDITOR)
 - Cifrado SQLCipher para ~/.keel/
-- Comando `keel conversar` — flujo interactivo completo con edición
-- Conector de mensajería (primer canal, no WhatsApp)
+- Conector de mensajería (primer canal)
 - Instalador de un comando (`curl | bash`)
 
 ## Diferido / fuera de scope inicial

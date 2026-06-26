@@ -196,6 +196,75 @@ def keel_get_persona(nombre: str) -> str:
     return p.model_dump_json(indent=2)
 
 
+# ─── Prompts ─────────────────────────────────────────────────────────────────
+
+
+@mcp.prompt()
+def keel_responder(mensaje: str, remitente: str) -> str:
+    """Template para redactar una respuesta con contexto de Keel.
+
+    Recupera el contexto completo (perfil + historial semántico + promesas)
+    y lo prepara como instrucción para que el LLM genere la respuesta.
+
+    Args:
+        mensaje: El mensaje recibido al que hay que responder.
+        remitente: Nombre de quien envió el mensaje.
+    """
+    from keel.storage.local import cargar_perfil, cargar_persona
+    from keel.engine.respuesta import construir_prompt
+    from keel.engine.presencia import analizar_tono
+    from keel.embedder.fastembed import get_embedder
+
+    try:
+        perfil = cargar_perfil()
+    except FileNotFoundError:
+        return "ERROR: Perfil no encontrado. Ejecuta `keel init` para crearlo."
+
+    persona = cargar_persona(remitente)
+    tono = analizar_tono(mensaje)
+
+    try:
+        embedder = get_embedder()
+    except Exception:
+        embedder = None
+
+    return construir_prompt(perfil, persona, mensaje, tono.resumen, embedder)
+
+
+@mcp.prompt()
+def keel_agenda_prompt() -> str:
+    """Muestra todos los compromisos pendientes para revisión con el LLM.
+
+    Útil para pedir a Claude que ayude a priorizar o redactar seguimientos.
+    """
+    from keel.storage.local import keel_dir
+    from keel.models.persona import Persona
+    from datetime import date
+
+    personas_dir = keel_dir() / "personas"
+    archivos = sorted(personas_dir.glob("*.json")) if personas_dir.exists() else []
+    hoy = date.today().isoformat()
+
+    lineas = [f"Compromisos pendientes al {hoy}:\n"]
+    total = 0
+    for archivo in archivos:
+        p = Persona.model_validate_json(archivo.read_text())
+        for promesa in p.promesas_pendientes:
+            vencida = promesa.fecha_compromiso and promesa.fecha_compromiso < hoy
+            estado = "⚠ VENCIDA" if vencida else ""
+            lineas.append(
+                f"- {p.nombre}: {promesa.descripcion}"
+                + (f" (límite: {promesa.fecha_compromiso} {estado})" if promesa.fecha_compromiso else "")
+            )
+            total += 1
+
+    if total == 0:
+        return "No hay compromisos pendientes registrados."
+
+    lineas.append(f"\nTotal: {total} compromisos.")
+    return "\n".join(lineas)
+
+
 # ─── Recursos ────────────────────────────────────────────────────────────────
 
 

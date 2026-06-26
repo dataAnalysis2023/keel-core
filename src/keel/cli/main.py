@@ -218,6 +218,82 @@ def status() -> None:
     console.print()
 
 
+@app.command()
+def agenda() -> None:
+    """Muestra todas las promesas pendientes de todas las personas."""
+    from keel.storage.local import keel_dir
+    from keel.models.persona import Persona
+    from rich.table import Table
+    from datetime import date
+
+    personas_dir = keel_dir() / "personas"
+    archivos = sorted(personas_dir.glob("*.json")) if personas_dir.exists() else []
+
+    pendientes = []
+    for archivo in archivos:
+        p = Persona.model_validate_json(archivo.read_text())
+        for promesa in p.promesas_pendientes:
+            pendientes.append((p.nombre, promesa))
+
+    if not pendientes:
+        console.print("[green]Sin promesas pendientes.[/green]")
+        return
+
+    tabla = Table(title="Agenda de compromisos", show_lines=True)
+    tabla.add_column("Con quién", style="bold")
+    tabla.add_column("Compromiso")
+    tabla.add_column("Fecha límite")
+
+    hoy = date.today().isoformat()
+    for nombre, promesa in pendientes:
+        vencida = promesa.fecha_compromiso and promesa.fecha_compromiso < hoy
+        fecha_str = f"[red]{promesa.fecha_compromiso}[/red]" if vencida else (promesa.fecha_compromiso or "—")
+        tabla.add_row(nombre, promesa.descripcion, fecha_str)
+
+    console.print(tabla)
+    console.print(f"\n[dim]{len(pendientes)} compromisos en total.[/dim]")
+
+
+@app.command()
+def contexto(
+    remitente: str = typer.Option(..., "--remitente", "-r", help="Nombre de la persona"),
+    mensaje: str = typer.Option("", "--mensaje", "-m", help="Mensaje de contexto para búsqueda semántica"),
+) -> None:
+    """Muestra el contexto completo sobre una persona sin generar respuesta."""
+    from keel.storage.local import cargar_perfil, cargar_persona
+    from keel.engine.respuesta import construir_prompt
+    from keel.engine.presencia import analizar_tono
+
+    try:
+        perfil = cargar_perfil()
+    except FileNotFoundError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1)
+
+    persona = cargar_persona(remitente)
+
+    embedder = None
+    if mensaje:
+        try:
+            embedder = _embedder()
+        except Exception:
+            pass
+
+    texto_referencia = mensaje or "contexto general"
+    tono = analizar_tono(texto_referencia) if mensaje else None
+    tono_resumen = tono.resumen if tono else "—"
+
+    ctx = construir_prompt(perfil, persona, texto_referencia, tono_resumen, embedder)
+
+    console.print(
+        Panel(
+            ctx,
+            title=f"[bold]Contexto sobre {remitente}[/bold]",
+            border_style="cyan",
+        )
+    )
+
+
 @app.command(name="mcp")
 def mcp_serve(
     transport: str = typer.Option("stdio", "--transport", "-t", help="stdio | sse"),
