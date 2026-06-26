@@ -1,9 +1,43 @@
 """Módulo 3 — Motor de respuesta."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from keel.models.perfil import PerfilUsuario
 from keel.models.persona import Persona
 from keel.engine.presencia import analizar_tono
 from keel.llm.base import LLMBase
+
+if TYPE_CHECKING:
+    from keel.embedder.base import EmbedderBase
+
+
+def _contexto_conversaciones(
+    persona: Persona,
+    mensaje: str,
+    embedder: "EmbedderBase | None",
+) -> str:
+    """Recupera contexto de conversaciones previas.
+
+    Con embedder: búsqueda semántica (las más relevantes por contenido).
+    Sin embedder: las últimas 3 cronológicamente.
+    """
+    if embedder is not None:
+        from keel.storage.vectorial import buscar_similar
+        resultados = buscar_similar(persona.nombre, mensaje, embedder, n=3)
+        if resultados:
+            entradas = [f"- {r['fecha']}: {r['resumen']}" for r in resultados]
+            return "Conversaciones relevantes (semántica):\n" + "\n".join(entradas)
+
+    if persona.historial_conversaciones:
+        entradas = [
+            f"- {c.fecha}: {c.resumen}"
+            for c in persona.historial_conversaciones[-3:]
+        ]
+        return "Últimas conversaciones:\n" + "\n".join(entradas)
+
+    return ""
 
 
 def construir_prompt(
@@ -11,14 +45,9 @@ def construir_prompt(
     persona: Persona,
     mensaje: str,
     tono_resumen: str,
+    embedder: "EmbedderBase | None" = None,
 ) -> str:
-    historial = ""
-    if persona.historial_conversaciones:
-        entradas = [
-            f"- {c.fecha}: {c.resumen}"
-            for c in persona.historial_conversaciones[-3:]
-        ]
-        historial = "\nÚltimas conversaciones:\n" + "\n".join(entradas)
+    historial = _contexto_conversaciones(persona, mensaje, embedder)
 
     promesas = ""
     if persona.promesas_pendientes:
@@ -62,7 +91,8 @@ def generar_sugerencia(
     persona: Persona,
     mensaje: str,
     llm: LLMBase,
+    embedder: "EmbedderBase | None" = None,
 ) -> str:
     tono = analizar_tono(mensaje)
-    prompt = construir_prompt(perfil, persona, mensaje, tono.resumen)
+    prompt = construir_prompt(perfil, persona, mensaje, tono.resumen, embedder)
     return llm.generar(prompt)

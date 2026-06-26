@@ -20,15 +20,19 @@ CLI funcional end-to-end: mensaje + remitente → sugerencia de respuesta vía O
 - [x] Storage local (carga JSON desde ~/.keel/)
 - [x] CLI: `keel respond`, `keel init`, `keel status`
 - [x] Tests unitarios de modelos y motor
-- [ ] Instalación `pip install -e .` verificada end-to-end
-- [ ] Prueba real con Ollama corriendo
+- [x] Instalación `pip install -e .` verificada end-to-end
+- [x] Prueba real con Ollama corriendo
+- [x] `keel persona add/list/show`
+- [x] Módulo 4 básico: guardar conversación en historial tras `keel respond`
+- [x] git init + primer commit
 
-## Hito 2 — Contexto vectorial
+## Hito 2 — Contexto vectorial (completado 2026-06-26)
 
-- [ ] Integrar LanceDB para embeddings locales (evaluar vs ChromaDB)
-- [ ] Búsqueda semántica en historial de conversaciones
-- [ ] Módulo 4: actualización automática del grafo de relaciones tras respuesta aprobada
-- [ ] Comando `keel remember` para agregar notas manualmente
+- [x] LanceDB para almacenamiento vectorial local (~/.keel/vectorial/)
+- [x] FastEmbed para embeddings locales multilingüe (paraphrase-multilingual-MiniLM-L12-v2, ~120MB)
+- [x] Búsqueda semántica en historial — motor usa contexto relevante por contenido, no cronológico
+- [x] `keel remember` — agrega notas y promesas al grafo de relaciones + LanceDB
+- [x] `keel respond` indexa automáticamente cada conversación guardada
 
 ## Hito 3 — Interfaz desktop (keel-app)
 
