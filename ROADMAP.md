@@ -427,7 +427,18 @@ sin que el usuario tenga que clasificarla explícitamente.
 - [x] 22 tests en `tests/test_sintesis.py` (prompt, parseo, motor puro, CLI, show, volcado)
 - [x] 442 rápidos verde
 
-## Hito 45 — Ciclo de síntesis autónomo nocturno (pendiente)
+## Hito 45 — Ciclo de síntesis autónomo nocturno (completado 2026-06-27)
+
+- [x] `keel ciclo` — comando diseñado para launchd: sintetiza todas las personas con historial, registra en `~/.keel/logs/ciclo.log` con timestamps
+- [x] Salida limpia si Ollama no disponible (exit 0, launchd no marca el job como fallido)
+- [x] `--dry-run` muestra qué personas se sintetizarían sin modificar datos
+- [x] `--forzar` re-sintetiza aunque ya tenga síntesis del día
+- [x] `--ver-log` muestra las últimas 40 líneas del log desde la terminal
+- [x] Omite automáticamente personas sin historial y ya sintetizadas hoy
+- [x] `scripts/launchd/install-ciclo.sh` — instala launchd agent a las 2:00 AM (hora configurable como argumento)
+- [x] `EnvironmentVariables.PATH` en el plist incluye Homebrew y `~/.local/bin` para que keel sea encontrable por launchd
+- [x] 13 tests en `tests/test_ciclo.py`: flujo completo, log, dry-run, forzar, Ollama caído, ver-log, sin perfil
+- [x] 455 rápidos verde
 ## Hito 46 — MCP Google Calendar como contexto situacional (pendiente)
 
 ## Diferido / fuera de scope inicial

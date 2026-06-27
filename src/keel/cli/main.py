@@ -1644,6 +1644,108 @@ def update() -> None:
     subprocess.run([str(app_dir / ".venv" / "bin" / "keel"), "status"])
 
 
+@app.command()
+def ciclo(
+    forzar: bool = typer.Option(False, "--forzar", "-f", help="Re-sintetiza aunque ya tenga síntesis del día"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Muestra qué haría sin modificar datos"),
+    modelo: str = typer.Option(None, "--modelo", "-m"),
+    ver_log: bool = typer.Option(False, "--ver-log", help="Muestra las últimas entradas del log y sale"),
+) -> None:
+    """Ciclo autónomo nocturno: sintetiza narrativas de todas las personas con historial.
+
+    Diseñado para ejecutarse desde launchd cada noche. Registra el resultado
+    en ~/.keel/logs/ciclo.log. Salida limpia incluso si Ollama no está disponible.
+
+    Instala el ciclo nocturno con:
+      bash ~/.local/share/keel-core/scripts/launchd/install-ciclo.sh
+    """
+    import datetime
+    from keel.storage.local import cargar_perfil, keel_dir, cargar_config
+    from keel.models.persona import Persona
+
+    log_dir = keel_dir() / "logs"
+    log_dir.mkdir(exist_ok=True)
+    log_path = log_dir / "ciclo.log"
+
+    if ver_log:
+        if not log_path.exists():
+            console.print("[yellow]Sin log todavía. Ejecuta `keel ciclo` primero.[/yellow]")
+            raise typer.Exit(0)
+        lineas = log_path.read_text(encoding="utf-8").splitlines()
+        for linea in lineas[-40:]:
+            console.print(linea)
+        raise typer.Exit(0)
+
+    def _log(msg: str) -> None:
+        ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        entrada = f"[{ts}] {msg}"
+        console.print(f"[dim]{entrada}[/dim]")
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(entrada + "\n")
+
+    cfg = cargar_config()
+    if modelo is None and cfg.modelo_ollama:
+        modelo = cfg.modelo_ollama
+
+    hoy = datetime.date.today().isoformat()
+    _log(f"── Ciclo iniciado {'(dry-run)' if dry_run else ''}")
+
+    try:
+        perfil = cargar_perfil()
+    except FileNotFoundError:
+        _log("ERROR: Perfil no encontrado. Ejecuta `keel init`.")
+        raise typer.Exit(1)
+
+    personas_dir = keel_dir() / "personas"
+    archivos = sorted(personas_dir.glob("*.json")) if personas_dir.exists() else []
+    todas = [Persona.model_validate_json(a.read_text()) for a in archivos]
+
+    candidatas = [
+        p for p in todas
+        if p.historial_conversaciones and (forzar or p.ultima_sintesis != hoy)
+    ]
+
+    _log(f"{len(todas)} personas · {len(candidatas)} pendientes de síntesis")
+
+    if not candidatas:
+        _log("Sin personas nuevas que sintetizar. Usa --forzar para regenerar.")
+        _log("── Ciclo completado")
+        raise typer.Exit(0)
+
+    if dry_run:
+        for p in candidatas:
+            console.print(f"  [dim]→ {p.nombre} ({len(p.historial_conversaciones)} conversaciones)[/dim]")
+        _log(f"Dry-run: {len(candidatas)} personas se sintetizarían.")
+        _log("── Ciclo completado (dry-run)")
+        raise typer.Exit(0)
+
+    from keel.llm.ollama import OllamaLLM
+    llm = OllamaLLM(modelo=modelo) if modelo else OllamaLLM()
+
+    if not llm.disponible():
+        _log("AVISO: Ollama no disponible — ciclo pospuesto hasta la próxima ejecución.")
+        _log("── Ciclo completado (sin síntesis)")
+        raise typer.Exit(0)  # Salida limpia: launchd no marca error
+
+    from keel.engine.sintesis import sintetizar_persona, aplicar_sintesis
+    from keel.storage.local import guardar_persona
+
+    ok = 0
+    errores = 0
+    for p in candidatas:
+        try:
+            sintesis = sintetizar_persona(p, perfil, llm)
+            aplicar_sintesis(p, sintesis)
+            guardar_persona(p)
+            _log(f"✓ {p.nombre} [{sintesis.tipo_relacion}]: {sintesis.narrativa[:80]}…")
+            ok += 1
+        except Exception as e:
+            _log(f"✗ {p.nombre}: {e}")
+            errores += 1
+
+    _log(f"── Ciclo completado: {ok} síntesis · {errores} errores")
+
+
 @app.command(name="mcp")
 def mcp_serve(
     transport: str = typer.Option("stdio", "--transport", "-t", help="stdio | sse"),
