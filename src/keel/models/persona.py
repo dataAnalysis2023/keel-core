@@ -21,6 +21,7 @@ class Persona(BaseModel):
     como_nos_conocemos: str = ""
     tono_relacional: str = "neutro"  # formal | informal | cercano | distante | neutro
     sensibilidades: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
     historial_conversaciones: list[ConversacionResumen] = Field(default_factory=list)
     promesas_pendientes: list[PromesaPendiente] = Field(default_factory=list)
     ultima_interaccion: Optional[str] = None  # YYYY-MM-DD

@@ -1,4 +1,4 @@
-"""Subcomandos: keel agenda ver | completar | posponer | notificar."""
+"""Subcomandos: keel agenda ver | add | completar | posponer | borrar | notificar."""
 
 import subprocess
 import sys
@@ -166,6 +166,55 @@ def posponer(
     console.print(
         f"[green]✓ '{promesa.descripcion}' pospuesta de {fecha_anterior} → {fecha}.[/green]"
     )
+
+
+@app.command("borrar")
+def borrar(
+    persona: str = typer.Option(..., "--persona", "-p", help="Nombre de la persona"),
+    indice: int = typer.Option(None, "--indice", "-i", help="Índice de la promesa"),
+    descripcion: str = typer.Option("", "--descripcion", "-d", help="Texto parcial para identificar la promesa"),
+    forzar: bool = typer.Option(False, "--forzar", "-f"),
+) -> None:
+    """Elimina una promesa pendiente (sin marcarla como cumplida)."""
+    p = cargar_persona(persona)
+
+    if not p.promesas_pendientes:
+        console.print(f"[yellow]{persona} no tiene promesas pendientes.[/yellow]")
+        raise typer.Exit(0)
+
+    if indice is not None:
+        if indice < 0 or indice >= len(p.promesas_pendientes):
+            console.print(f"[red]Índice {indice} fuera de rango (0-{len(p.promesas_pendientes)-1}).[/red]")
+            raise typer.Exit(1)
+        idx = indice
+    elif descripcion:
+        coincidencias = [
+            i for i, pr in enumerate(p.promesas_pendientes)
+            if descripcion.lower() in pr.descripcion.lower()
+        ]
+        if len(coincidencias) == 0:
+            console.print(f"[red]Ninguna promesa contiene '{descripcion}'.[/red]")
+            raise typer.Exit(1)
+        if len(coincidencias) > 1:
+            console.print("[yellow]Varias coincidencias: usa --indice.[/yellow]")
+            raise typer.Exit(1)
+        idx = coincidencias[0]
+    else:
+        console.print("[red]Usa --indice o --descripcion para identificar la promesa.[/red]")
+        raise typer.Exit(1)
+
+    promesa = p.promesas_pendientes[idx]
+
+    if not forzar and not Confirm.ask(
+        f"¿Eliminar promesa: '[cyan]{promesa.descripcion}[/cyan]'?",
+        default=False,
+    ):
+        console.print("[dim]Cancelado.[/dim]")
+        raise typer.Exit(0)
+
+    p.promesas_pendientes.pop(idx)
+    guardar_persona(p)
+    console.print(f"[green]✓ Promesa eliminada de la agenda de {persona}.[/green]")
 
 
 @app.command("notificar")

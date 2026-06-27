@@ -398,6 +398,18 @@ CLI funcional end-to-end: mensaje + remitente → sugerencia de respuesta vía O
 - [x] 5 tests nuevos en `test_mcp.py`
 - [x] 405 rápidos + 37 MCP = 442 tests verde
 
+## Hito 43 — `keel agenda borrar` + `keel persona tag` (completado 2026-06-27)
+
+- [x] `keel agenda borrar --persona X (--indice N | --descripcion "...")` — elimina una promesa sin marcarla cumplida; `--forzar` para scripts
+- [x] 8 tests nuevos en `test_agenda.py`: por índice, por descripción, índice inválido, sin coincidencia, sin promesas, ambiguo, sin argumento
+- [x] Campo `tags: list[str]` añadido al modelo `Persona` (retrocompatible — default `[]`)
+- [x] `keel persona tag add <nombre> <tag>` — añade etiqueta (normaliza a minúscula, no duplica)
+- [x] `keel persona tag borrar <nombre> <tag>` — elimina etiqueta con error claro si no existe
+- [x] `keel persona tag list [tag]` — sin arg: personas con etiquetas; con arg: filtra por etiqueta
+- [x] `keel persona list --tag <tag>` — columna Tags añadida, filtro opcional
+- [x] 10 tests nuevos en `test_persona_mgmt.py`
+- [x] 420 rápidos verde
+
 ## Diferido / fuera de scope inicial
 
 - Conector WhatsApp — riesgo regulatorio y técnico alto, no bloquea el núcleo

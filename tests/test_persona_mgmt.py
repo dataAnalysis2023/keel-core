@@ -1,4 +1,4 @@
-"""Tests de gestión de personas: renombrar, eliminar, fusionar."""
+"""Tests de gestión de personas: renombrar, eliminar, fusionar, tag."""
 
 import pytest
 import click
@@ -266,6 +266,99 @@ def test_show_temas_frecuentes_solo_con_repeticion(keel_tmp):
     # "unico" puede aparecer en el historial pero NO en la sección de frecuentes
     # (la sección de frecuentes requiere n > 1 — validado por ausencia del contador ×1)
     assert "×1" not in result.output
+
+
+# ── persona tag ───────────────────────────────────────────────────────────────
+
+def test_tag_add(keel_tmp):
+    from keel.cli.persona import tag_add
+    _crear("Ana")
+    tag_add(nombre="Ana", tag="cliente")
+    p = cargar_persona("Ana")
+    assert "cliente" in p.tags
+
+
+def test_tag_add_normaliza_a_minuscula(keel_tmp):
+    from keel.cli.persona import tag_add
+    _crear("Ana")
+    tag_add(nombre="Ana", tag="CLIENTE")
+    p = cargar_persona("Ana")
+    assert "cliente" in p.tags
+    assert "CLIENTE" not in p.tags
+
+
+def test_tag_add_duplicado_no_duplica(keel_tmp):
+    from keel.cli.persona import tag_add
+    _crear("Ana")
+    tag_add(nombre="Ana", tag="cliente")
+    tag_add(nombre="Ana", tag="cliente")
+    assert cargar_persona("Ana").tags.count("cliente") == 1
+
+
+def test_tag_borrar(keel_tmp):
+    from keel.cli.persona import tag_add, tag_borrar
+    _crear("Ana")
+    tag_add(nombre="Ana", tag="cliente")
+    tag_borrar(nombre="Ana", tag="cliente")
+    assert "cliente" not in cargar_persona("Ana").tags
+
+
+def test_tag_borrar_inexistente(keel_tmp):
+    from keel.cli.persona import tag_borrar
+    _crear("Ana")
+    with pytest.raises(_EXIT):
+        tag_borrar(nombre="Ana", tag="noexiste")
+
+
+def test_tag_list_filtra(keel_tmp):
+    from typer.testing import CliRunner
+    from keel.cli.main import app
+    from keel.cli.persona import tag_add
+
+    runner = CliRunner(env={"COLUMNS": "200"})
+    _crear("Ana")
+    _crear("Carlos")
+    _crear("Beatriz")
+    tag_add(nombre="Ana", tag="cliente")
+    tag_add(nombre="Carlos", tag="cliente")
+
+    result = runner.invoke(app, ["persona", "tag", "list", "cliente"])
+    assert result.exit_code == 0
+    assert "Ana" in result.output
+    assert "Carlos" in result.output
+    assert "Beatriz" not in result.output
+
+
+def test_tag_list_sin_tag_muestra_todos_con_etiquetas(keel_tmp):
+    from typer.testing import CliRunner
+    from keel.cli.main import app
+    from keel.cli.persona import tag_add
+
+    runner = CliRunner(env={"COLUMNS": "200"})
+    _crear("Ana")
+    _crear("Carlos")
+    tag_add(nombre="Ana", tag="equipo")
+
+    result = runner.invoke(app, ["persona", "tag", "list"])
+    assert result.exit_code == 0
+    assert "Ana" in result.output
+    assert "Carlos" not in result.output
+
+
+def test_persona_list_filtro_tag(keel_tmp):
+    from typer.testing import CliRunner
+    from keel.cli.main import app
+    from keel.cli.persona import tag_add
+
+    runner = CliRunner(env={"COLUMNS": "200"})
+    _crear("Ana")
+    _crear("Carlos")
+    tag_add(nombre="Carlos", tag="cliente")
+
+    result = runner.invoke(app, ["persona", "list", "--tag", "cliente"])
+    assert result.exit_code == 0
+    assert "Carlos" in result.output
+    assert "Ana" not in result.output
 
 
 def test_show_recientes_limita(keel_tmp):

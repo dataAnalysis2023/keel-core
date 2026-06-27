@@ -1,4 +1,4 @@
-"""Subcomandos: keel persona add | list | show | renombrar | eliminar | editar | fusionar."""
+"""Subcomandos: keel persona add | list | show | renombrar | eliminar | editar | fusionar | tag."""
 
 import json
 import subprocess
@@ -44,8 +44,10 @@ def add(
 
 
 @app.command("list")
-def list_personas() -> None:
-    """Lista todas las personas registradas."""
+def list_personas(
+    tag: str = typer.Option(None, "--tag", "-t", help="Filtrar por etiqueta"),
+) -> None:
+    """Lista todas las personas registradas. Con --tag filtra por etiqueta."""
     personas_dir = keel_dir() / "personas"
     archivos = sorted(personas_dir.glob("*.json")) if personas_dir.exists() else []
 
@@ -53,26 +55,36 @@ def list_personas() -> None:
         console.print("[yellow]No hay personas registradas. Usa: keel persona add Nombre[/yellow]")
         return
 
+    personas = [Persona.model_validate_json(a.read_text()) for a in archivos]
+    if tag:
+        personas = [p for p in personas if tag.lower() in p.tags]
+        if not personas:
+            console.print(f"[yellow]Ninguna persona tiene la etiqueta '{tag}'.[/yellow]")
+            return
+
     tabla = Table(title="Grafo de relaciones", show_lines=False)
     tabla.add_column("Nombre", style="bold")
     tabla.add_column("Rol")
     tabla.add_column("Tono")
+    tabla.add_column("Tags", style="dim")
     tabla.add_column("Conversaciones")
     tabla.add_column("Promesas")
     tabla.add_column("Última interacción", style="dim")
 
-    for archivo in archivos:
-        p = Persona.model_validate_json(archivo.read_text())
+    for p in personas:
         tabla.add_row(
             p.nombre,
             p.rol or "—",
             p.tono_relacional,
+            ", ".join(p.tags) if p.tags else "—",
             str(len(p.historial_conversaciones)),
             str(len(p.promesas_pendientes)),
             p.ultima_interaccion or "—",
         )
 
     console.print(tabla)
+    if tag:
+        console.print(f"\n[dim]{len(personas)} persona(s) con etiqueta '{tag}'.[/dim]")
 
 
 @app.command("show")
@@ -318,3 +330,79 @@ def fusionar(
         f"[green]✓ Fusión completa: {conv_a_mover} conversación(es) y "
         f"{prom_a_mover} promesa(s) movidas a '{destino}'. '{origen}' eliminada.[/green]"
     )
+
+
+tag_app = typer.Typer(help="Etiquetas para filtrar personas.")
+app.add_typer(tag_app, name="tag")
+
+
+@tag_app.command("add")
+def tag_add(
+    nombre: str = typer.Argument(..., help="Nombre de la persona"),
+    tag: str = typer.Argument(..., help="Etiqueta a agregar (ej: cliente, equipo, familia)"),
+) -> None:
+    """Agrega una etiqueta a una persona."""
+    p = cargar_persona(nombre)
+    tag_lower = tag.lower()
+    if tag_lower in p.tags:
+        console.print(f"[yellow]'{nombre}' ya tiene la etiqueta '{tag}'.[/yellow]")
+        return
+    p.tags.append(tag_lower)
+    guardar_persona(p)
+    console.print(f"[green]✓ Etiqueta '{tag}' añadida a '{nombre}'.[/green]")
+
+
+@tag_app.command("borrar")
+def tag_borrar(
+    nombre: str = typer.Argument(..., help="Nombre de la persona"),
+    tag: str = typer.Argument(..., help="Etiqueta a eliminar"),
+) -> None:
+    """Elimina una etiqueta de una persona."""
+    p = cargar_persona(nombre)
+    tag_lower = tag.lower()
+    if tag_lower not in p.tags:
+        console.print(f"[red]'{nombre}' no tiene la etiqueta '{tag}'.[/red]")
+        raise typer.Exit(1)
+    p.tags.remove(tag_lower)
+    guardar_persona(p)
+    console.print(f"[green]✓ Etiqueta '{tag}' eliminada de '{nombre}'.[/green]")
+
+
+@tag_app.command("list")
+def tag_list(
+    tag: str = typer.Argument(None, help="Filtrar personas que tengan esta etiqueta"),
+) -> None:
+    """Lista personas y sus etiquetas. Con argumento, filtra por etiqueta."""
+    personas_dir = keel_dir() / "personas"
+    archivos = sorted(personas_dir.glob("*.json")) if personas_dir.exists() else []
+
+    if not archivos:
+        console.print("[yellow]No hay personas registradas.[/yellow]")
+        return
+
+    personas_con_tags = []
+    for archivo in archivos:
+        p = Persona.model_validate_json(archivo.read_text())
+        if tag and tag.lower() not in p.tags:
+            continue
+        if not tag and not p.tags:
+            continue
+        personas_con_tags.append(p)
+
+    if not personas_con_tags:
+        if tag:
+            console.print(f"[yellow]Ninguna persona tiene la etiqueta '{tag}'.[/yellow]")
+        else:
+            console.print("[yellow]Ninguna persona tiene etiquetas definidas.[/yellow]")
+        return
+
+    tabla = Table(show_lines=False)
+    tabla.add_column("Persona", style="bold")
+    tabla.add_column("Etiquetas", style="cyan")
+
+    for p in personas_con_tags:
+        tabla.add_row(p.nombre, ", ".join(p.tags) if p.tags else "—")
+
+    console.print(tabla)
+    if tag:
+        console.print(f"\n[dim]{len(personas_con_tags)} persona(s) con etiqueta '{tag}'.[/dim]")

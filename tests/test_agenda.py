@@ -1,4 +1,4 @@
-"""Tests de keel.cli.agenda — ver, completar, posponer, notificar, add."""
+"""Tests de keel.cli.agenda — ver, completar, posponer, borrar, notificar, add."""
 
 import click
 import json
@@ -166,6 +166,61 @@ def test_posponer_indice_invalido_lanza_exit(keel_tmp):
     _persona_con_promesas("María", [("Reunión", "2026-06-28")])
     with pytest.raises(_EXIT):
         posponer(persona="María", indice=99, fecha="2026-07-01")
+
+
+# ── borrar ────────────────────────────────────────────────────────────────────
+
+def test_borrar_por_indice(keel_tmp):
+    from keel.cli.agenda import borrar
+    _persona_con_promesas("María", [("Enviar informe", "2026-07-01"), ("Llamar", None)])
+    borrar(persona="María", indice=0, descripcion="", forzar=True)
+    p = cargar_persona("María")
+    assert len(p.promesas_pendientes) == 1
+    assert p.promesas_pendientes[0].descripcion == "Llamar"
+
+
+def test_borrar_por_descripcion(keel_tmp):
+    from keel.cli.agenda import borrar
+    _persona_con_promesas("María", [("Enviar propuesta", "2026-07-01"), ("Llamar", None)])
+    borrar(persona="María", indice=None, descripcion="propuesta", forzar=True)
+    p = cargar_persona("María")
+    assert len(p.promesas_pendientes) == 1
+    assert "Llamar" in p.promesas_pendientes[0].descripcion
+
+
+def test_borrar_indice_invalido(keel_tmp):
+    from keel.cli.agenda import borrar
+    _persona_con_promesas("María", [("Única", None)])
+    with pytest.raises(_EXIT):
+        borrar(persona="María", indice=99, descripcion="", forzar=True)
+
+
+def test_borrar_sin_coincidencia(keel_tmp):
+    from keel.cli.agenda import borrar
+    _persona_con_promesas("María", [("Enviar informe", None)])
+    with pytest.raises(_EXIT):
+        borrar(persona="María", indice=None, descripcion="xyz_inexistente", forzar=True)
+
+
+def test_borrar_sin_promesas(keel_tmp):
+    from keel.cli.agenda import borrar
+    guardar_persona(Persona(nombre="Carlos"))
+    with pytest.raises(_EXIT):
+        borrar(persona="Carlos", indice=0, descripcion="", forzar=True)
+
+
+def test_borrar_ambiguo_lanza_exit(keel_tmp):
+    from keel.cli.agenda import borrar
+    _persona_con_promesas("María", [("Enviar informe A", None), ("Enviar informe B", None)])
+    with pytest.raises(_EXIT):
+        borrar(persona="María", indice=None, descripcion="Enviar informe", forzar=True)
+
+
+def test_borrar_sin_indice_ni_descripcion(keel_tmp):
+    from keel.cli.agenda import borrar
+    _persona_con_promesas("María", [("Algo", None)])
+    with pytest.raises(_EXIT):
+        borrar(persona="María", indice=None, descripcion="", forzar=True)
 
 
 # ── notificar ─────────────────────────────────────────────────────────────────
