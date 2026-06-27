@@ -5,7 +5,8 @@
 set -euo pipefail
 
 # ── Configuración ─────────────────────────────────────────────────────────────
-KEEL_VERSION="0.1.0"
+KEEL_VERSION="0.2.0"
+PATH_UPDATED=0
 KEEL_APP_DIR="${HOME}/.local/share/keel-core"
 KEEL_BIN_DIR="${HOME}/.local/bin"
 KEEL_DATA_DIR="${HOME}/.keel"
@@ -130,6 +131,7 @@ setup_path() {
     else
         printf '\n# keel-core\nexport PATH="$HOME/.local/bin:$PATH"\n' >> "$SHELL_CONFIG"
         ok "PATH actualizado en $SHELL_CONFIG"
+        PATH_UPDATED=1
     fi
 
     export PATH="${KEEL_BIN_DIR}:${PATH}"
@@ -139,6 +141,7 @@ setup_path() {
 initialize() {
     step "Inicializando ~/.keel/"
     "$KEEL_BIN_DIR/keel" init
+    warn "Primera vez que uses 'keel buscar', fastembed descargará ~90MB del modelo de embeddings."
 }
 
 # ── Paso 8: Verificar ─────────────────────────────────────────────────────────
@@ -160,13 +163,15 @@ verify
 
 printf "\n${BOLD}${GREEN}  Keel instalado correctamente.${NC}\n\n"
 printf "  Próximos pasos:\n"
-printf "  1. Edita tu perfil:    ${BOLD}nano ~/.keel/perfil.json${NC}\n"
+printf "  1. Edita tu perfil:    ${BOLD}keel perfil show${NC}  /  ${BOLD}keel perfil editar${NC}\n"
 printf "  2. Agrega una persona: ${BOLD}keel persona add Nombre --rol 'rol'${NC}\n"
-printf "  3. Primera respuesta:  ${BOLD}keel respond 'mensaje' --remitente Nombre${NC}\n"
-printf "  4. Claude Code MCP:    ${BOLD}claude mcp add keel ~/.local/bin/keel mcp${NC}\n"
-printf "\n  Documentación: ${BLUE}keel --help${NC}\n\n"
+printf "  3. Primera conversación: ${BOLD}keel conversar 'mensaje' --remitente Nombre${NC}\n"
+printf "  4. Briefing del día:   ${BOLD}keel hoy${NC}\n"
+printf "  5. Sugerencias:        ${BOLD}keel sugerir${NC}\n"
+printf "  6. Claude Code MCP:    ${BOLD}claude mcp add keel -- keel mcp${NC}\n"
+printf "\n  Más comandos: ${BLUE}keel --help${NC}\n\n"
 
 # Recordatorio de reload si se modificó el shell config
-if [ "${PATH_UPDATED:-0}" = "1" ]; then
-    printf "  ${YELLOW}Ejecuta: source ~/.zshrc  (o abre una nueva terminal)${NC}\n\n"
+if [ "${PATH_UPDATED}" = "1" ]; then
+    printf "  ${YELLOW}Ejecuta: source ~/${SHELL_CONFIG##*/}  (o abre una nueva terminal)${NC}\n\n"
 fi

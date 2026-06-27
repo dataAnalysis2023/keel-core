@@ -74,12 +74,329 @@ CLI funcional end-to-end: mensaje + remitente → sugerencia de respuesta vía O
 - [x] `keel.engine.sesion` como módulo puro testeable sin TTY
 - [x] 46/46 tests verde
 
-## Hito 8 — Por definir
+## Hito 8 — CI, release y herramientas dev (completado 2026-06-26)
 
-Opciones:
-- Cifrado SQLCipher para ~/.keel/
-- Conector de mensajería (primer canal)
-- GitHub release + GitHub Actions CI
+- [x] GitHub Actions CI: tests en Python 3.11–3.13 + lint ruff en cada push/PR
+- [x] GitHub Actions Release: auto-release en tags `v*`, corre tests antes de publicar
+- [x] `Makefile`: atajos `make test`, `make lint`, `make serve`, `make mcp`, `make install`
+- [x] Configuración ruff en `pyproject.toml` (E, F, W, I — sin E501)
+- [x] `keel export` — genera contexto de personas como Markdown (stdout o archivo)
+
+## Hito 9 — Loop de aprendizaje (completado 2026-06-26)
+
+- [x] `SugerenciasPerfil` — modelo Pydantic para frases, vocabulario, valores, temas
+- [x] `keel.engine.aprendizaje` — análisis puro: prompt → LLM → parseo robusto de JSON
+- [x] `keel perfil show` — vuelca el perfil legible en tabla
+- [x] `keel perfil actualizar` — analiza historial, sugiere item por item, aplica solo con confirmación
+- [x] Parseo resiliente: extrae JSON de respuestas con texto adicional, fallback si falla
+- [x] 56/56 tests verde
+
+## Hito 10 — Cifrado en reposo (completado 2026-06-26)
+
+- [x] `keel.security.cifrado` — AES-256-GCM con magic header `KEEL` para detección
+- [x] `keel.security.llave` — clave random 32 bytes, Keychain (macOS) con fallback a `~/.keel/.key` (0600)
+- [x] `storage/local.py` — wrapper transparente: cifra en write, descifra en read si `.cifrado` activo
+- [x] `keel cifrar` — migración one-shot: activa cifrado y protege archivos existentes
+- [x] `keel descifrar` — desactiva cifrado y restaura JSON a texto plano
+- [x] Opt-in vía marker `~/.keel/.cifrado` — retrocompatible, no rompe instalaciones existentes
+- [x] 67/67 tests verde
+
+## Hito 11 — Canal clipboard (completado 2026-06-26)
+
+- [x] `keel.io.clipboard` — `leer()` / `escribir()` vía `pbpaste`/`pbcopy` (sin deps nuevas)
+- [x] `keel clip --remitente X` — flujo completo: clipboard → tono → sugerencia → devolver al clipboard
+- [x] `--copiar` para auto-copiar sin confirmación (modo script/shortcut)
+- [x] Errores claros si clipboard vacío, pbpaste/pbcopy falla, o plataforma no es macOS
+- [x] 74/74 tests verde
+
+## Hito 12 — Cero fricción (completado 2026-06-26)
+
+- [x] Picker interactivo de persona — `keel clip` y `keel conversar` sin `--remitente` muestran tabla numerada con rol y última interacción
+- [x] Selección por número, nombre exacto, o prefijo no ambiguo
+- [x] `scripts/raycast/keel-clip.sh` — comando Raycast: si pasa remitente lo usa directamente; si no, abre Terminal con picker
+- [x] `scripts/raycast/keel-conversar.sh` — abre flujo completo desde Raycast
+- [x] 82/82 tests verde
+
+## Hito 13 — Reflexión semanal (completado 2026-06-26)
+
+- [x] `DigestRelacional` — modelo con promesas próximas, personas sin contacto, temas recurrentes
+- [x] `keel.engine.reflexion` — lógica pura: detección de urgencias, cálculo de días, top temas por frecuencia
+- [x] `keel reflexionar` — muestra el digest, síntesis LLM opcional, exporta a clipboard o archivo Markdown
+- [x] `--sin-llm` para uso offline, `--clipboard` para Obsidian/notas, `--output` para archivo
+- [x] Emojis de semáforo en promesas (🔴 ≤2d, 🟡 ≤5d, 🟢 resto)
+- [x] 96/96 tests verde
+
+## Hito 14 — Búsqueda en historial (completado 2026-06-26)
+
+- [x] `keel.engine.busqueda` — motor puro: semántico (LanceDB) con fallback a keyword
+- [x] `keel buscar "texto"` — tabla de resultados con persona, fecha, resumen, temas
+- [x] `--persona X` para filtrar, `--top N` para limitar resultados, `--sin-vectores` para forzar keyword
+- [x] Modo semántico activo si embedder disponible; keyword si no (sin error)
+- [x] Resultados ordenados por fecha descendente
+- [x] 108/108 tests verde
+
+## Hito 15 — MCP actualizado (completado 2026-06-26)
+
+- [x] `keel_buscar(texto, persona, top)` — búsqueda en historial desde Claude Code
+- [x] `keel_reflexionar(dias_promesa, dias_silencio)` — digest semanal como tool MCP
+- [x] `keel_aprender()` — sugerencias de perfil sin aplicarlas (read-only desde MCP)
+- [x] Instructions del servidor actualizadas para incluir los nuevos tools
+- [x] 113/113 tests verde
+
+## Hito 16 — Importación de historial (completado 2026-06-26)
+
+- [x] `keel.io.importar` — parsers para WhatsApp (iOS + Android), texto plano y CSV
+- [x] Detección automática de formato (`--formato auto`)
+- [x] Agrupación por día para WhatsApp (1 resumen por día, no un registro por mensaje)
+- [x] Filtrado de mensajes del sistema (multimedia, cifrado, etc.)
+- [x] `keel importar archivo.txt --persona Carlos` — preview + confirmación + indexación LanceDB
+- [x] `--dry-run` para ver qué importaría sin escribir nada
+- [x] Deduplicación por fecha al importar sobre historial existente
+- [x] 132/132 tests verde
+
+## Hito 17 — Gestión completa de personas (completado 2026-06-26)
+
+- [x] `keel persona renombrar <viejo> <nuevo>` — actualiza archivo y campo nombre
+- [x] `keel persona eliminar <nombre>` — con confirmación; `--forzar` para scripts
+- [x] `keel persona editar <nombre>` — abre en $EDITOR, valida JSON al cerrar
+- [x] `keel persona fusionar <origen> <destino>` — combina historial, promesas y sensibilidades; deduplica; ordena cronológicamente; elimina origen
+- [x] `keel persona list` mejorado con columna de última interacción
+- [x] 147/147 tests verde
+
+## Hito 18 — Agenda completa + notificaciones macOS (completado 2026-06-26)
+
+- [x] `keel agenda ver` — tabla con índice, estado (VENCIDA/HOY/PRÓXIMA) y semáforo visual
+- [x] `keel agenda completar --persona X --indice N` — marca promesa cumplida; acepta --descripcion para búsqueda por texto
+- [x] `keel agenda posponer --persona X --indice N --fecha YYYY-MM-DD` — cambia fecha límite
+- [x] `keel agenda notificar` — notificaciones macOS vía osascript para promesas urgentes
+- [x] `scripts/launchd/install-notificaciones.sh` — activa notificaciones automáticas a las 9am
+- [x] 159/159 tests verde
+
+## Hito 19 — Integración Obsidian (completado 2026-06-26)
+
+- [x] `keel.io.obsidian` — write_nota, exportar_reflexion, exportar_persona, agregar_a_diario
+- [x] Frontmatter YAML automático (tipo, fecha, tags) compatible con Obsidian
+- [x] `keel reflexionar --obsidian [--vault PATH]` — escribe digest en `vault/keel/reflexiones/`
+- [x] `keel exportar-obsidian [--remitente X]` — exporta personas como notas con checkboxes de promesas
+- [x] `keel conversar --obsidian` — agrega resumen al diario del día en `vault/keel/diario/`
+- [x] Vault default: `~/Proyectos/` (vault de Obsidian de Juan Diego)
+- [x] 175/175 tests verde
+
+## Hito 20 — REST API completa v0.2.0 (completado 2026-06-26)
+
+- [x] `POST /buscar` — búsqueda keyword/semántica en historial con filtro por persona
+- [x] `GET /reflexion` — digest relacional en JSON o Markdown; parámetros dias_promesa y dias_silencio
+- [x] `GET /agenda` — lista de promesas pendientes con estado de vencimiento
+- [x] `POST /agenda/{persona}/completar` — marca promesa cumplida por índice
+- [x] `PATCH /agenda/{persona}/posponer` — cambia fecha límite de una promesa
+- [x] `POST /aprendizaje/analizar` — análisis de historial vía LLM; retorna SugerenciasPerfil
+- [x] API bumpeada a v0.2.0
+- [x] 189/189 tests verde
+
+## Hito 21 — `keel config` (completado 2026-06-26)
+
+- [x] `ConfigKeel` — modelo Pydantic con 6 preferencias: vault_obsidian, modelo_ollama, dias_promesa, dias_silencio, min_conversaciones_aprendizaje, clipboard_no_guardar
+- [x] `cargar_config()` / `guardar_config()` en `storage/local.py` — transparente al cifrado
+- [x] `keel config ver` — tabla de preferencias actuales con descripción
+- [x] `keel config set <clave> <valor>` — tipado correcto (int, bool, str), error claro en clave desconocida
+- [x] `keel config reset` — restaura defaults con confirmación
+- [x] Integración en `reflexionar` — `--dias-promesa` y `--dias-silencio` usan config como default
+- [x] Integración en `conversar` — `--vault` y `--modelo` usan config como default
+- [x] Integración en `clip` — `clipboard_no_guardar` activa `--no-guardar` automáticamente
+- [x] 205/205 tests verde
+
+## Hito 22 — `keel historial` (completado 2026-06-26)
+
+- [x] `keel historial --persona X` — tabla cronológica de conversaciones con fecha, resumen y temas
+- [x] `--desde` / `--hasta` para filtrar por rango de fechas (YYYY-MM-DD)
+- [x] `--top N` para ver solo los N más recientes
+- [x] `--json` para output procesable por scripts o LLMs
+- [x] Ordenación cronológica garantizada (independiente del orden de inserción)
+- [x] 216/216 tests verde
+
+## Hito 23 — `keel preparar` (completado 2026-06-26)
+
+- [x] `keel.engine.preparar` — motor puro: `briefing_a_markdown`, `construir_prompt_briefing`, `_temas_frecuentes`
+- [x] `keel preparar --persona X` — briefing completo: rol, contexto, sensibilidades, estado actual, promesas, historial reciente, temas frecuentes
+- [x] `--sin-llm` para briefing offline, `--recientes N` para controlar ventana de historial
+- [x] Síntesis LLM en 3-5 líneas para lo más importante de la conversación
+- [x] `--clipboard` para copiar, `--obsidian` para exportar a `vault/keel/briefings/`
+- [x] Integra `cargar_config()` — vault y modelo desde config si no se pasan flags
+- [x] 236/236 tests verde
+
+## Hito 24 — `keel stats` (completado 2026-06-26)
+
+- [x] `keel.engine.stats` — motor puro: personas activas, temas frecuentes, distribución por mes, promesas vencidas
+- [x] `keel stats` — vista ejecutiva: totales globales, ranking de personas, nube de temas, histograma mensual de actividad, tabla de promesas vencidas
+- [x] `--json` para output procesable por scripts o integración con otros sistemas
+- [x] 249/249 tests verde
+
+## Hito 25 — MCP v2 (completado 2026-06-26)
+
+- [x] `keel_preparar(persona, n_recientes)` — briefing pre-conversación desde Claude Code
+- [x] `keel_historial(persona, desde, hasta, top)` — historial cronológico con filtros desde Claude Code
+- [x] `keel_stats()` — panorama estadístico del grafo desde Claude Code
+- [x] Instructions del servidor actualizadas con los nuevos tools
+- [x] MCP ahora tiene 11 tools: get_context, respond, remember, list_personas, get_persona, buscar, reflexionar, aprender, preparar, historial, stats
+- [x] 258/258 tests verde (237 rápidos + 21 MCP)
+
+## Hito 26 — `keel agenda add` (completado 2026-06-26)
+
+- [x] `keel agenda add --persona X --descripcion "..." [--fecha YYYY-MM-DD]` — agrega promesa directamente sin prefijo mágico
+- [x] Validación de fecha, acumulación correcta sobre promesas existentes
+- [x] `keel_agenda_add(persona, descripcion, fecha)` — tool MCP para registrar compromisos desde Claude Code
+- [x] MCP ahora tiene 12 tools
+- [x] 265/265 tests verde (241 rápidos + 24 MCP)
+
+## Hito 27 — `keel persona show` enriquecido (completado 2026-06-26)
+
+- [x] Vista de perfil completa: rol, contexto, tono, sensibilidades, estado actual
+- [x] Días transcurridos desde última interacción (calculado en tiempo real)
+- [x] Sección "Temas frecuentes" — solo temas con más de 1 mención, con contador
+- [x] Tabla de compromisos pendientes con semáforo 🔴🟡🟢 por fecha
+- [x] Historial reciente con `--recientes N` (default 5), muestra total si hay más
+- [x] `--raw` para mantener el dump JSON original cuando se necesite
+- [x] 271/271 tests verde (247 rápidos + 24 MCP)
+
+## Hito 28 — `keel hoy` (completado 2026-06-26)
+
+- [x] `keel hoy` — conversaciones guardadas hoy + promesas con fecha hoy, por persona
+- [x] `--fecha YYYY-MM-DD` para revisar cualquier día pasado
+- [x] Conteo final: X conversaciones · Y promesas · Z personas
+- [x] `--clipboard` para copiar el resumen en Markdown
+- [x] `--obsidian` para agregar al diario del día en el vault
+- [x] Integra `cargar_config()` para vault por defecto
+- [x] 281/281 tests verde (257 rápidos + 24 MCP)
+
+## Hito 29 — `keel backup` / `keel restaurar` (completado 2026-06-26)
+
+- [x] `keel backup [--output PATH]` — ZIP de todo `~/.keel/` con fecha en el nombre, sin deps nuevas
+- [x] `keel restaurar ARCHIVO.zip [--forzar]` — extrae sobre `~/.keel/`, confirmación antes de sobreescribir
+- [x] Funciona transparentemente con datos cifrados y sin cifrar
+- [x] 291/291 tests verde (267 rápidos + 24 MCP)
+
+## Hito 30 — `keel status` mejorado (completado 2026-06-26)
+
+- [x] Versión del paquete vía `importlib.metadata`
+- [x] Nombre del usuario del perfil en la línea de estado
+- [x] Total de conversaciones + promesas pendientes a nivel global
+- [x] Última actividad registrada (máximo de `ultima_interaccion` entre todas las personas)
+- [x] Sección de config activa: vault Obsidian, días promesa/silencio
+- [x] Estado de cifrado AES-256-GCM (activo/inactivo)
+- [x] Tamaño total de `~/.keel/` en KB/MB
+- [x] 303/303 tests verde (279 rápidos + 24 MCP)
+
+## Hito 31 — `keel buscar` con filtros de fecha (completado 2026-06-26)
+
+- [x] `buscar_global()` acepta `desde`/`hasta` como filtros post-búsqueda en ambos modos (semántico y keyword)
+- [x] `keel buscar "texto" --desde 2026-01-01 --hasta 2026-06-30` — búsqueda cross-persona con rango de fechas
+- [x] Validación de formato YYYY-MM-DD en el CLI con error claro
+- [x] MCP `keel_buscar` actualizado con parámetros `desde`/`hasta`; mensaje de "sin resultados" incluye el rango aplicado
+- [x] 308/308 tests verde (284 rápidos + 24 MCP)
+
+## Hito 32 — `keel sugerir` (completado 2026-06-26)
+
+- [x] `keel.engine.sugerencias` — motor puro: scoring por urgencia (vencidas ×100+días, próximas ×50-días, silencio ×días), temas frecuentes como contexto
+- [x] `keel sugerir [--top N] [--sin-llm] [--clipboard]` — lista priorizada con razones concretas por contacto
+- [x] Respeta `config.dias_silencio` y `config.dias_promesa` para los umbrales
+- [x] Síntesis LLM en 2-4 líneas de qué priorizar esta semana
+- [x] `keel_sugerir(top)` como tool MCP — 13 tools en total
+- [x] 324/324 tests verde (300 rápidos + 24 MCP)
+
+## Hito 33 — Polish de subgrupos (completado 2026-06-26)
+
+- [x] `keel perfil editar` — abre `perfil.json` en `$EDITOR`, valida JSON al cerrar (mirror de `keel persona editar`)
+- [x] `keel agenda ver --persona X` — filtra la vista de agenda por persona; sin `--persona` sigue mostrando todo
+- [x] 332/332 tests verde (308 rápidos + 24 MCP)
+
+## Hito 34 — Instalador actualizado (completado 2026-06-27)
+
+- [x] `install.sh` actualizado a v0.2.0: fix bug PATH_UPDATED, "próximos pasos" con comandos actuales (`keel conversar`, `keel hoy`, `keel sugerir`, MCP con sintaxis correcta)
+- [x] Aviso de descarga fastembed (~90MB en primer `keel buscar`)
+- [x] `uninstall.sh` — ofrece backup automático con `keel backup` antes de desinstalar
+- [x] `keel init` — mensaje corregido de `keel respond` a `keel conversar`
+
+## Hito 35 — `keel pregunta` (completado 2026-06-27)
+
+- [x] `keel.engine.pregunta` — motor puro: `construir_prompt_pregunta`, `respuesta_sin_llm`
+- [x] `keel pregunta "¿...?" --persona X` — busca fragmentos relevantes del historial y los da como contexto al LLM para responder
+- [x] `--sin-llm` para ver el historial relevante sin síntesis
+- [x] Fallback si Ollama no disponible: muestra historial sin síntesis con aviso
+- [x] `--clipboard` para copiar la respuesta
+- [x] `--sin-vectores`, `--top N`, `--modelo M` para control fino
+- [x] Picker de persona si se omite `--persona`
+- [x] `keel_pregunta(pregunta, persona, top)` — tool MCP: 14 tools en total
+- [x] 340/340 tests verde (324 rápidos + 16 pregunta + 27 MCP — 3 nuevos)
+
+## Hito 36 — `keel pregunta` modo global (completado 2026-06-27)
+
+- [x] `keel pregunta "¿...?"` sin `--persona` — busca en el historial de todas las personas
+- [x] Prompt diferenciado: modo global muestra nombre de la persona en cada fragmento
+- [x] `respuesta_sin_llm` adaptado: etiqueta `[persona]` en cada resultado del modo global
+- [x] `keel_pregunta` MCP: `persona=""` (vacío) activa modo global
+- [x] 331/331 tests rápidos verde (7 tests nuevos en test_pregunta.py)
+
+## Hito 37 — `keel volcar` (completado 2026-06-27)
+
+- [x] `keel.engine.volcado` — motor puro: `volcar_a_markdown`, `_icono_promesa` (🔴🟡🟢 por urgencia)
+- [x] `keel volcar` — dump completo: framing LLM + perfil + personas (N recientes) + agenda global con semáforos
+- [x] `--persona X` para volcar solo una persona, `--recientes N` (default 3), `--sin-framing`, `--clipboard`, `--output`
+- [x] Diferencia con `keel export`: framing instruccional, agenda consolidada, semáforos de urgencia, orientado a Claude.ai
+- [x] 351/351 tests verde (20 tests nuevos en test_volcado.py)
+
+## Hito 38 — `keel notas` (completado 2026-06-27)
+
+- [x] `Nota` — modelo Pydantic: id (UUID 8 chars), fecha (auto), contenido, temas
+- [x] `cargar_notas`, `guardar_notas`, `agregar_nota`, `eliminar_nota` en `storage/local.py`
+- [x] `buscar_notas(texto, notas, embedder, top)` en `engine/busqueda.py` — keyword + semántico; devuelve `persona="[nota]"`
+- [x] `keel notas add "contenido" [--temas a,b]` — agrega nota e indexa en LanceDB (`persona="_notas"`)
+- [x] `keel notas ver [--top N] [--desde YYYY-MM-DD]` — tabla cronológica
+- [x] `keel notas buscar "texto"` — búsqueda keyword/semántica en notas
+- [x] `keel notas borrar ID [--forzar]` — elimina por ID con confirmación
+- [x] `keel pregunta` (global) incluye notas automáticamente en el contexto de búsqueda
+- [x] 375/375 tests verde (24 tests nuevos en test_notas.py)
+
+## Hito 39 — MCP para notas (completado 2026-06-27)
+
+- [x] `keel_notas_add(contenido, temas)` — captura una nota desde Claude Code e indexa en LanceDB
+- [x] `keel_notas_buscar(texto, top)` — busca en notas por contenido/tema (semántico + keyword)
+- [x] `keel_notas_ver(top)` — lista las notas más recientes con ID, fecha y temas
+- [x] `keel_pregunta` MCP actualizado: modo global incluye notas en la búsqueda de contexto
+- [x] Instructions del servidor MCP actualizadas con los nuevos tools
+- [x] MCP ahora tiene 17 tools en total
+- [x] 375 rápidos + tests MCP nuevos verde
+
+## Hito 40 — README + keel volcar con notas (completado 2026-06-27)
+
+- [x] README completo: instalación, quick start, referencia de todos los comandos, tabla MCP (17 tools), flujos típicos, estructura de datos, privacidad, desarrollo
+- [x] `Makefile` separado en `make test` (rápidos) y `make test-all` (incluye MCP)
+- [x] `keel volcar` incluye sección "Notas recientes" cuando hay notas (`--sin-notas` para omitir, `--notas-top N`)
+- [x] `keel volcar --persona X` correctamente omite notas (son globales, no de una persona)
+- [x] 380/380 tests verde (5 tests nuevos en test_volcado.py)
+
+## Hito 41 — `keel alias` (completado 2026-06-27)
+
+- [x] `cargar_aliases`, `guardar_aliases`, `resolver_alias` en `storage/local.py` — persistencia en `~/.keel/aliases.json`
+- [x] `cargar_persona()` resuelve aliases automáticamente — todos los comandos con `--persona` se benefician sin cambios
+- [x] `keel alias add <atajo> <persona>` — crea o actualiza alias; avisa si ya existe una persona con ese nombre
+- [x] `keel alias list` — tabla de todos los aliases definidos con contador
+- [x] `keel alias borrar <atajo>` — elimina alias con error claro si no existe
+- [x] Resolución case-insensitive (`jc`, `JC`, `Jc` → mismo alias)
+- [x] 20 tests nuevos en `tests/test_alias.py`
+- [x] 400/400 tests verde
+
+## Hito 42 — `keel notas editar` + MCP alias (completado 2026-06-27)
+
+- [x] `keel notas editar <id> [--contenido "..."] [--temas "..."]` — edita contenido y/o temas de una nota; sin flags abre en `$EDITOR`
+- [x] Preserva `id` y `fecha` original al editar
+- [x] 5 tests nuevos en `test_notas.py` cubriendo flags, preservación de fecha e ID inválido
+- [x] `keel_alias_add(alias, persona)` — crea o actualiza alias desde Claude Code
+- [x] `keel_alias_list()` — lista aliases definidos
+- [x] `keel_alias_borrar(alias)` — elimina alias con error claro si no existe
+- [x] `keel_alias_*` registrados en `list_tools` y en `instructions` del servidor MCP
+- [x] MCP ahora tiene 20 tools en total
+- [x] 5 tests nuevos en `test_mcp.py`
+- [x] 405 rápidos + 37 MCP = 442 tests verde
 
 ## Diferido / fuera de scope inicial
 
