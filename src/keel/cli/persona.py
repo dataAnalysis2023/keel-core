@@ -110,6 +110,21 @@ def show(
     console.print(Rule(f"[bold]{persona.nombre}[/bold]"))
     console.print()
 
+    # ── Narrativa inferida ────────────────────────────────────────────────────
+    if persona.narrativa:
+        tipo_str = f"  [dim]({persona.tipo_relacion})[/dim]" if persona.tipo_relacion else ""
+        ctx_str = f"\n[dim italic]{persona.contexto_situacional}[/dim italic]" if persona.contexto_situacional else ""
+        console.print(
+            Panel(
+                persona.narrativa + ctx_str,
+                title=f"[bold cyan]Síntesis relacional[/bold cyan]{tipo_str}",
+                border_style="cyan",
+            )
+        )
+        if persona.ultima_sintesis:
+            console.print(f"  [dim]Última síntesis: {persona.ultima_sintesis}[/dim]")
+        console.print()
+
     # ── Datos de perfil ───────────────────────────────────────────────────────
     filas_perfil = []
     if persona.rol:
@@ -406,3 +421,75 @@ def tag_list(
     console.print(tabla)
     if tag:
         console.print(f"\n[dim]{len(personas_con_tags)} persona(s) con etiqueta '{tag}'.[/dim]")
+
+
+@app.command("sintetizar")
+def sintetizar(
+    nombre: str = typer.Argument(None, help="Nombre de la persona (omitir = todas)"),
+    modelo: str = typer.Option(None, "--modelo", "-m"),
+    forzar: bool = typer.Option(False, "--forzar", "-f", help="Resinteza aunque ya tenga síntesis del día"),
+) -> None:
+    """Infiere la narrativa, tipo de relación y contexto situacional de una persona usando el LLM.
+
+    Sin argumento, sintetiza todas las personas con historial.
+    """
+    from keel.storage.local import cargar_perfil, cargar_config
+    from keel.engine.sintesis import sintetizar_persona, aplicar_sintesis
+    from keel.llm.ollama import OllamaLLM
+    from rich.rule import Rule
+    from datetime import date
+
+    cfg = cargar_config()
+    if modelo is None and cfg.modelo_ollama:
+        modelo = cfg.modelo_ollama
+
+    try:
+        perfil = cargar_perfil()
+    except FileNotFoundError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1)
+
+    llm = OllamaLLM(modelo=modelo) if modelo else OllamaLLM()
+    if not llm.disponible():
+        console.print("[red]Ollama no disponible. Ejecuta: ollama serve[/red]")
+        raise typer.Exit(1)
+
+    hoy = date.today().isoformat()
+
+    if nombre:
+        personas_a_sintetizar = [cargar_persona(nombre)]
+    else:
+        personas_dir = keel_dir() / "personas"
+        archivos = sorted(personas_dir.glob("*.json")) if personas_dir.exists() else []
+        todas = [Persona.model_validate_json(a.read_text()) for a in archivos]
+        # Solo las que tienen historial; omitir las ya sintetizadas hoy salvo --forzar
+        personas_a_sintetizar = [
+            p for p in todas
+            if p.historial_conversaciones and (forzar or p.ultima_sintesis != hoy)
+        ]
+        if not personas_a_sintetizar:
+            console.print("[green]Todas las personas con historial ya tienen síntesis del día. Usa --forzar para regenerar.[/green]")
+            raise typer.Exit(0)
+
+    console.print()
+    for p in personas_a_sintetizar:
+        if not p.historial_conversaciones:
+            console.print(f"[dim]{p.nombre}: sin historial, omitida.[/dim]")
+            continue
+
+        console.print(f"[dim]Sintetizando {p.nombre}...[/dim]")
+        try:
+            sintesis = sintetizar_persona(p, perfil, llm)
+            aplicar_sintesis(p, sintesis)
+            guardar_persona(p)
+
+            console.print(Rule(f"[bold]{p.nombre}[/bold]  [dim]{sintesis.tipo_relacion}[/dim]"))
+            console.print(f"  {sintesis.narrativa}")
+            if sintesis.contexto_situacional:
+                console.print(f"  [dim italic]{sintesis.contexto_situacional}[/dim italic]")
+            console.print()
+        except Exception as e:
+            console.print(f"[red]Error sintetizando {p.nombre}: {e}[/red]")
+
+    total = len(personas_a_sintetizar)
+    console.print(f"[green]✓ {total} persona(s) sintetizada(s).[/green]")

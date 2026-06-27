@@ -42,7 +42,8 @@ mcp = FastMCP(
         "Usa keel_notas_ver para listar las notas más recientes. "
         "Usa keel_alias_add para crear un atajo de nombre de persona. "
         "Usa keel_alias_list para ver todos los alias definidos. "
-        "Usa keel_alias_borrar para eliminar un alias."
+        "Usa keel_alias_borrar para eliminar un alias. "
+        "Usa keel_sintetizar_persona para inferir la narrativa y tipo de relación de una persona desde su historial."
     ),
 )
 
@@ -670,6 +671,45 @@ def keel_stats() -> str:
     if s["sin_historial"]:
         lineas.append(f"\nSin historial: {', '.join(s['sin_historial'])}")
 
+    return "\n".join(lineas)
+
+
+@mcp.tool()
+def keel_sintetizar_persona(persona: str) -> str:
+    """Infiere narrativa, tipo de relación y contexto situacional de una persona usando el LLM.
+
+    Lee el historial de conversaciones y deduce el carácter real de la relación
+    sin requerir input explícito del usuario. Actualiza los campos narrativa,
+    tipo_relacion y contexto_situacional en el perfil de la persona.
+
+    Args:
+        persona: Nombre de la persona a sintetizar.
+    """
+    from keel.storage.local import cargar_perfil, cargar_persona, guardar_persona
+    from keel.engine.sintesis import sintetizar_persona as _sintetizar, aplicar_sintesis
+    from keel.llm.ollama import OllamaLLM
+
+    try:
+        perfil = cargar_perfil()
+    except FileNotFoundError:
+        return "ERROR: Perfil no encontrado. Ejecuta `keel init`."
+
+    p = cargar_persona(persona)
+    if not p.historial_conversaciones:
+        return f"'{persona}' no tiene historial suficiente para sintetizar."
+
+    llm = OllamaLLM()
+    if not llm.disponible():
+        return "ERROR: Ollama no disponible. Ejecuta `ollama serve`."
+
+    sintesis = _sintetizar(p, perfil, llm)
+    aplicar_sintesis(p, sintesis)
+    guardar_persona(p)
+
+    lineas = [f"Síntesis de {persona} [{sintesis.tipo_relacion}]:\n"]
+    lineas.append(sintesis.narrativa)
+    if sintesis.contexto_situacional:
+        lineas.append(f"\nContexto: {sintesis.contexto_situacional}")
     return "\n".join(lineas)
 
 

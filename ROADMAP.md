@@ -410,6 +410,26 @@ CLI funcional end-to-end: mensaje + remitente → sugerencia de respuesta vía O
 - [x] 10 tests nuevos en `test_persona_mgmt.py`
 - [x] 420 rápidos verde
 
+## Hito 44 — Síntesis relacional inferida (completado 2026-06-27)
+
+Primer paso del paradigma emergente: Keel infiere quién es cada persona
+sin que el usuario tenga que clasificarla explícitamente.
+
+- [x] `Persona` con 4 nuevos campos: `narrativa`, `tipo_relacion`, `contexto_situacional`, `ultima_sintesis`
+- [x] `keel.engine.sintesis` — motor puro: `construir_prompt_sintesis`, `parsear_sintesis` (robusto ante ruido), `sintetizar_persona`, `aplicar_sintesis`
+- [x] 8 tipos de relación inferibles: familia | amistad | trabajo | cliente | colaborador | mentor | nuevo | otro
+- [x] `keel persona sintetizar <nombre>` — infiere narrativa de una persona usando Ollama
+- [x] `keel persona sintetizar` (sin arg) — sintetiza todas las personas con historial; omite las ya sintetizadas hoy (salvo `--forzar`)
+- [x] `keel persona show` muestra la síntesis como panel al inicio si existe
+- [x] `keel volcar` incluye narrativa y contexto situacional como blockquote Markdown por persona
+- [x] `keel_sintetizar_persona(persona)` — tool MCP (21 tools en total)
+- [x] Parseo resiliente: extrae JSON aunque la respuesta traiga texto adicional; fallback a narrativa cruda si falla
+- [x] 22 tests en `tests/test_sintesis.py` (prompt, parseo, motor puro, CLI, show, volcado)
+- [x] 442 rápidos verde
+
+## Hito 45 — Ciclo de síntesis autónomo nocturno (pendiente)
+## Hito 46 — MCP Google Calendar como contexto situacional (pendiente)
+
 ## Diferido / fuera de scope inicial
 
 - Conector WhatsApp — riesgo regulatorio y técnico alto, no bloquea el núcleo

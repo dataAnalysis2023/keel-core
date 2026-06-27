@@ -57,7 +57,13 @@ def volcar_a_markdown(
     lineas.append(f"## Personas ({len(personas)} · {total_convs} conversaciones)\n")
 
     for p in personas:
-        lineas.append(f"### {p.nombre}")
+        tipo_str = f" · {p.tipo_relacion}" if p.tipo_relacion else ""
+        lineas.append(f"### {p.nombre}{tipo_str}")
+        if p.narrativa:
+            lineas.append(f"> {p.narrativa}")
+            if p.contexto_situacional:
+                lineas.append(f"> *{p.contexto_situacional}*")
+            lineas.append("")
         if p.rol:
             lineas.append(f"- **Rol**: {p.rol}")
         if p.como_nos_conocemos:

@@ -26,3 +26,8 @@ class Persona(BaseModel):
     promesas_pendientes: list[PromesaPendiente] = Field(default_factory=list)
     ultima_interaccion: Optional[str] = None  # YYYY-MM-DD
     estado_actual: str = ""
+    # Síntesis inferida — generada por el LLM, no escrita por el usuario
+    narrativa: str = ""
+    tipo_relacion: str = ""  # familia | amistad | trabajo | cliente | colaborador | nuevo | otro
+    contexto_situacional: str = ""  # contexto coyuntural inferido
+    ultima_sintesis: Optional[str] = None  # YYYY-MM-DD del último ciclo
