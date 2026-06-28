@@ -452,8 +452,23 @@ sin que el usuario tenga que clasificarla explícitamente.
 - [x] Falla silenciosamente si no es macOS o si osascript no devuelve datos
 - [x] 78 tests verde (calendario + MCP + ciclo)
 
+## Hito 47 — Abstracción FuenteMensajes (completado 2026-06-28)
+
+- [x] `FuenteMensajes` (ABC) en `src/keel/io/fuentes.py` — contrato: `nombre`, `extensiones`, `leer()`, `agrupar()`
+- [x] `ExportacionWhatsApp` — wraps el parser existente de `importar.py`
+- [x] `TextoPlano` — párrafos separados por línea en blanco
+- [x] `CSV` — columnas fecha, resumen [, temas]
+- [x] `detectar_fuente()` — autodetección por extensión y contenido (patrón WhatsApp en primeros 500 chars)
+- [x] `fuente_para_formato()` — instancia por nombre explícito, case-insensitive
+- [x] `MensajeImportado` migrado a `fuentes.py`; re-exportado desde `importar.py` (retrocompatible)
+- [x] `keel importar` usa `detectar_fuente` / `fuente_para_formato` en lugar de if/elif hardcodeados
+- [x] 30 tests nuevos en `tests/test_fuentes.py`; `tests/test_importar.py` sin modificar (retrocompat verificada)
+- [x] 469 tests rápidos verde
+
+## Hito 48 — Cloud LLM opt-in (pendiente)
+
 ## Diferido / fuera de scope inicial
 
-- Conector WhatsApp — riesgo regulatorio y técnico alto, no bloquea el núcleo
-- Modo cloud opt-in con cifrado E2E
+- Conector WhatsApp real — riesgo regulatorio y técnico alto (FuenteMensajes es el contrato; la impl. real queda diferida)
+- Sincronización cloud de ~/.keel/ con E2E entre dispositivos
 - Windows support
