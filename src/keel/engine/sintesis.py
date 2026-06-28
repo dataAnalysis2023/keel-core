@@ -30,7 +30,11 @@ class SintesisPersona(BaseModel):
     contexto_situacional: str = ""
 
 
-def construir_prompt_sintesis(persona: "Persona", perfil_nombre: str) -> str:
+def construir_prompt_sintesis(
+    persona: "Persona",
+    perfil_nombre: str,
+    contexto_agenda: str = "",
+) -> str:
     historial = persona.historial_conversaciones[-20:]  # últimas 20 entradas
     entradas = "\n".join(
         f"- {c.fecha}: {c.resumen}"
@@ -58,6 +62,10 @@ def construir_prompt_sintesis(persona: "Persona", perfil_nombre: str) -> str:
         meta.append(f"Sensibilidades: {', '.join(persona.sensibilidades)}")
     meta_str = ("\n".join(meta) + "\n") if meta else ""
 
+    agenda_str = ""
+    if contexto_agenda:
+        agenda_str = f"\nContexto de agenda de {perfil_nombre} (próximos días):\n{contexto_agenda}\n"
+
     tipos = " | ".join(TIPOS_RELACION)
 
     return f"""Analiza el historial de interacciones entre {perfil_nombre} y {persona.nombre}.
@@ -65,8 +73,7 @@ Tu tarea es inferir el carácter real de esta relación a partir de los patrones
 
 {meta_str}Conversaciones registradas:
 {entradas}
-{promesas_str}
-
+{promesas_str}{agenda_str}
 Responde ÚNICAMENTE con JSON válido, sin texto adicional:
 {{
   "narrativa": "2-4 oraciones que describan quién es {persona.nombre} para {perfil_nombre}, la naturaleza real de la relación, patrones observados y dinámica actual",
@@ -101,9 +108,10 @@ def sintetizar_persona(
     persona: "Persona",
     perfil: "PerfilUsuario",
     llm: "LLMBase",
+    contexto_agenda: str = "",
 ) -> SintesisPersona:
     """Infiere narrativa, tipo_relacion y contexto_situacional del historial."""
-    prompt = construir_prompt_sintesis(persona, perfil.nombre)
+    prompt = construir_prompt_sintesis(persona, perfil.nombre, contexto_agenda=contexto_agenda)
     respuesta = llm.generar(prompt)
     return parsear_sintesis(respuesta)
 

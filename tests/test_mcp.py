@@ -65,6 +65,8 @@ def test_list_tools():
     assert "keel_alias_add" in nombres
     assert "keel_alias_list" in nombres
     assert "keel_alias_borrar" in nombres
+    assert "keel_calendario_ver" in nombres
+    assert "keel_calendario_contexto" in nombres
 
 
 def test_list_personas_vacio(keel_tmp):
@@ -398,3 +400,60 @@ def test_alias_borrar(keel_tmp):
 def test_alias_borrar_inexistente(keel_tmp):
     res = asyncio.run(_call("keel_alias_borrar", {"alias": "fantasma"}))
     assert "ERROR" in res
+
+
+# ── keel_calendario_ver / keel_calendario_contexto — mock osascript ───────────
+
+def test_calendario_ver_sin_eventos(keel_tmp, monkeypatch):
+    import subprocess
+    monkeypatch.setattr("sys.platform", "darwin")
+
+    class FakeResult:
+        returncode = 1
+        stdout = ""
+
+    monkeypatch.setattr(subprocess, "run", lambda *a, **kw: FakeResult())
+    res = asyncio.run(_call("keel_calendario_ver", {"dias": 7}))
+    assert "no disponible" in res or "Sin eventos" in res
+
+
+def test_calendario_ver_con_eventos(keel_tmp, monkeypatch):
+    import subprocess
+    monkeypatch.setattr("sys.platform", "darwin")
+
+    class FakeResult:
+        returncode = 0
+        stdout = "Demo con cliente|2026-07-01|10:00|Work\nReunión legal|2026-07-02|14:00|Personal\n"
+
+    monkeypatch.setattr(subprocess, "run", lambda *a, **kw: FakeResult())
+    res = asyncio.run(_call("keel_calendario_ver", {"dias": 7}))
+    assert "Demo con cliente" in res or "Agenda" in res
+
+
+def test_calendario_contexto_vacio(keel_tmp, monkeypatch):
+    import subprocess
+    monkeypatch.setattr("sys.platform", "darwin")
+
+    class FakeResult:
+        returncode = 1
+        stdout = ""
+
+    monkeypatch.setattr(subprocess, "run", lambda *a, **kw: FakeResult())
+    res = asyncio.run(_call("keel_calendario_contexto", {"dias": 7}))
+    assert res == ""
+
+
+def test_calendario_contexto_campaña(keel_tmp, monkeypatch):
+    import subprocess
+    monkeypatch.setattr("sys.platform", "darwin")
+
+    class FakeResult:
+        returncode = 0
+        stdout = (
+            "Reunión campaña electoral|2026-07-01|10:00|Work\n"
+            "Debate de candidatos|2026-07-02|14:00|Personal\n"
+        )
+
+    monkeypatch.setattr(subprocess, "run", lambda *a, **kw: FakeResult())
+    res = asyncio.run(_call("keel_calendario_contexto", {"dias": 7}))
+    assert "electoral" in res or "campaña" in res

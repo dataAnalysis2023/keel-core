@@ -43,7 +43,9 @@ mcp = FastMCP(
         "Usa keel_alias_add para crear un atajo de nombre de persona. "
         "Usa keel_alias_list para ver todos los alias definidos. "
         "Usa keel_alias_borrar para eliminar un alias. "
-        "Usa keel_sintetizar_persona para inferir la narrativa y tipo de relación de una persona desde su historial."
+        "Usa keel_sintetizar_persona para inferir la narrativa y tipo de relación de una persona desde su historial. "
+        "Usa keel_calendario_ver para leer los eventos próximos del Calendario de macOS e inferir el contexto situacional del usuario. "
+        "Usa keel_calendario_contexto para obtener solo el contexto situacional inferido (período de campaña, lanzamiento, etc.)."
     ),
 )
 
@@ -768,6 +770,52 @@ def keel_alias_borrar(alias: str) -> str:
     persona = aliases.pop(alias_lower)
     guardar_aliases(aliases)
     return f"✓ Alias '{alias}' → '{persona}' eliminado."
+
+
+@mcp.tool()
+def keel_calendario_ver(dias: int = 7) -> str:
+    """Lee los eventos próximos del Calendario de macOS e infiere el contexto situacional.
+
+    Requiere macOS. Lee desde la app Calendario (Apple Calendar), que puede
+    tener sincronizados Google Calendar, iCloud, Outlook, etc. No requiere
+    OAuth ni credenciales externas.
+
+    Args:
+        dias: Días hacia adelante para leer eventos (default: 7).
+    """
+    from keel.io.calendario import leer_eventos_macos, resumir_agenda, inferir_contexto_agenda
+
+    eventos = leer_eventos_macos(dias=dias)
+    if not eventos:
+        return "Sin eventos en el calendario o Calendario de macOS no disponible."
+
+    resumen = resumir_agenda(eventos, dias=dias)
+    contexto = inferir_contexto_agenda(eventos, dias=dias)
+
+    lineas = [resumen]
+    if not contexto:
+        lineas.append("\nSin patrón contextual específico detectado.")
+    return "\n".join(lineas)
+
+
+@mcp.tool()
+def keel_calendario_contexto(dias: int = 7) -> str:
+    """Devuelve solo el contexto situacional inferido del calendario próximo.
+
+    Útil para incluirlo en un prompt de síntesis relacional o para pedir
+    al LLM que interprete el período actual del usuario.
+
+    Args:
+        dias: Días hacia adelante para analizar (default: 7).
+    """
+    from keel.io.calendario import leer_eventos_macos, inferir_contexto_agenda
+
+    eventos = leer_eventos_macos(dias=dias)
+    if not eventos:
+        return ""
+
+    contexto = inferir_contexto_agenda(eventos, dias=dias)
+    return contexto or "Semana sin patrón contextual especial."
 
 
 # ─── Prompts ─────────────────────────────────────────────────────────────────

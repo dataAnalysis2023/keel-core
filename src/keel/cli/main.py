@@ -1727,6 +1727,19 @@ def ciclo(
         _log("── Ciclo completado (sin síntesis)")
         raise typer.Exit(0)  # Salida limpia: launchd no marca error
 
+    # Leer contexto del calendario (falla silenciosamente si no disponible)
+    contexto_agenda = ""
+    try:
+        from keel.io.calendario import leer_eventos_macos, resumir_agenda
+        eventos = leer_eventos_macos(dias=7)
+        if eventos:
+            contexto_agenda = resumir_agenda(eventos, dias=7)
+            _log(f"Calendario: {len(eventos)} evento(s) leído(s)")
+        else:
+            _log("Calendario: sin eventos o no disponible")
+    except Exception as e:
+        _log(f"Calendario: omitido ({e})")
+
     from keel.engine.sintesis import sintetizar_persona, aplicar_sintesis
     from keel.storage.local import guardar_persona
 
@@ -1734,7 +1747,7 @@ def ciclo(
     errores = 0
     for p in candidatas:
         try:
-            sintesis = sintetizar_persona(p, perfil, llm)
+            sintesis = sintetizar_persona(p, perfil, llm, contexto_agenda=contexto_agenda)
             aplicar_sintesis(p, sintesis)
             guardar_persona(p)
             _log(f"✓ {p.nombre} [{sintesis.tipo_relacion}]: {sintesis.narrativa[:80]}…")
@@ -1744,6 +1757,58 @@ def ciclo(
             errores += 1
 
     _log(f"── Ciclo completado: {ok} síntesis · {errores} errores")
+
+
+@app.command()
+def calendario(
+    dias: int = typer.Option(7, "--dias", "-d", help="Días hacia adelante"),
+    solo_contexto: bool = typer.Option(False, "--contexto", "-c", help="Muestra solo el contexto inferido"),
+) -> None:
+    """Muestra eventos próximos del Calendario de macOS e infiere el contexto situacional."""
+    from keel.io.calendario import leer_eventos_macos, inferir_contexto_agenda, resumir_agenda
+    from rich.table import Table
+    from rich.rule import Rule
+
+    import sys
+    if sys.platform != "darwin":
+        console.print("[yellow]El comando calendario requiere macOS.[/yellow]")
+        raise typer.Exit(1)
+
+    console.print(f"[dim]Leyendo eventos de los próximos {dias} días...[/dim]")
+    eventos = leer_eventos_macos(dias=dias)
+
+    if not eventos:
+        console.print("[yellow]No se encontraron eventos o el Calendario no está disponible.[/yellow]")
+        console.print("[dim]Asegúrate de que macOS Calendar tiene acceso a tus calendarios.[/dim]")
+        raise typer.Exit(0)
+
+    contexto = inferir_contexto_agenda(eventos, dias)
+
+    if solo_contexto:
+        if contexto:
+            console.print(contexto)
+        else:
+            console.print("[dim]Sin patrón contextual detectado.[/dim]")
+        raise typer.Exit(0)
+
+    console.print()
+    console.print(Rule(f"[bold]Agenda próximos {dias} días[/bold]"))
+    console.print()
+
+    tabla = Table(show_lines=False, box=None, padding=(0, 2))
+    tabla.add_column("Fecha", style="dim", width=12)
+    tabla.add_column("Hora", style="dim", width=6)
+    tabla.add_column("Título")
+    tabla.add_column("Calendario", style="dim", width=16)
+
+    for e in sorted(eventos, key=lambda x: (x.fecha, x.hora)):
+        tabla.add_row(e.fecha, e.hora, e.titulo, e.calendario)
+
+    console.print(tabla)
+    console.print(f"\n[dim]{len(eventos)} evento(s)[/dim]")
+
+    if contexto:
+        console.print(f"\n[bold]Contexto inferido:[/bold] {contexto}")
 
 
 @app.command(name="mcp")
