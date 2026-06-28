@@ -36,3 +36,22 @@ estado: activo
 - `pyproject.toml` — configuración del paquete con hatchling
 
 **Pendiente del Hito 1.** Verificar instalación `pip install -e .` y prueba end-to-end con Ollama real.
+
+---
+
+## 2026-06-28 — Hito 46: integración Calendario de macOS
+
+**Decisiones selladas.**
+- Calendario vía `osascript` (JXA) en lugar de Google Calendar API — sin OAuth, sin credenciales externas, funciona con cualquier fuente sincronizada en la app Calendario (iCloud, Google, Outlook). Falla silenciosamente si no está disponible.
+- `_KEYWORDS_CONTEXTO` usa frases compuestas ("campaña electoral") en lugar de palabras sueltas ("campaña") para reducir falsos positivos en títulos de reuniones comunes.
+- El contexto de agenda se pasa al ciclo nocturno como string ya formateado — `sintetizar_persona` no depende del calendario, solo lo consume opcionalmente.
+
+**Ejecutado.**
+- `src/keel/io/calendario.py` — EventoCalendario, leer_eventos_macos, resumir_agenda, inferir_contexto_agenda
+- `src/keel/engine/sintesis.py` — `construir_prompt_sintesis` acepta `contexto_agenda`; `sintetizar_persona` lo propaga
+- `src/keel/cli/main.py` — `keel ciclo` lee calendario antes de sintetizar; comando `keel calendario`
+- `src/keel/mcp/server.py` — `keel_calendario_ver`, `keel_calendario_contexto` (22 tools en total)
+- `tests/test_calendario.py` — 245 líneas, mockea osascript vía monkeypatch
+- 78 tests verde al cierre de sesión
+
+**Estado al cierre.** Hitos 1–46 completados. 78 tests verde. Sistema en producción local (launchd ciclo nocturno activo). Próxima área: pendiente de definir.

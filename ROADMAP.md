@@ -439,7 +439,18 @@ sin que el usuario tenga que clasificarla explícitamente.
 - [x] `EnvironmentVariables.PATH` en el plist incluye Homebrew y `~/.local/bin` para que keel sea encontrable por launchd
 - [x] 13 tests en `tests/test_ciclo.py`: flujo completo, log, dry-run, forzar, Ollama caído, ver-log, sin perfil
 - [x] 455 rápidos verde
-## Hito 46 — MCP Google Calendar como contexto situacional (pendiente)
+## Hito 46 — Integración con Calendario de macOS (completado 2026-06-28)
+
+- [x] `keel.io.calendario` — lee eventos próximos vía osascript (sin OAuth ni dependencias externas)
+- [x] `inferir_contexto_agenda(eventos, dias)` — detecta patrones situacionales por keywords en títulos (temporada electoral, lanzamiento, viaje, etc.)
+- [x] `resumir_agenda(eventos, dias)` — texto comprimido de la agenda para incluir en prompts LLM
+- [x] `sintetizar_persona` acepta `contexto_agenda` — el ciclo nocturno lo pasa automáticamente al prompt de síntesis
+- [x] `keel ciclo` lee el calendario antes de sintetizar — el contexto situacional se enriquece con la agenda real
+- [x] `keel calendario [--dias N] [--contexto]` — comando CLI: tabla de eventos + contexto inferido
+- [x] `keel_calendario_ver(dias)` — tool MCP: resumen de eventos + contexto (22 tools en total)
+- [x] `keel_calendario_contexto(dias)` — tool MCP: solo el contexto situacional (para prompts de síntesis)
+- [x] Falla silenciosamente si no es macOS o si osascript no devuelve datos
+- [x] 78 tests verde (calendario + MCP + ciclo)
 
 ## Diferido / fuera de scope inicial
 
