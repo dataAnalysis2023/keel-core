@@ -55,3 +55,25 @@ estado: activo
 - 78 tests verde al cierre de sesión
 
 **Estado al cierre.** Hitos 1–46 completados. 78 tests verde. Sistema en producción local (launchd ciclo nocturno activo). Próxima área: pendiente de definir.
+
+---
+
+## 2026-06-28 — Hitos 47–50: FuenteMensajes, Cloud LLM, keel SOS y PWA
+
+**Decisiones selladas.**
+- Hito 47: `FuenteMensajes` (ABC) como contrato para fuentes externas. WhatsApp, TextoPlano y CSV como primeras implementaciones. `keel importar` usa `detectar_fuente()` en lugar de if/elif hardcodeados.
+- Hito 48: Cloud LLM opt-in. `AnthropicLLM` y `OpenAILLM` implementan `LLMBase` con lazy import. `crear_llm(config)` reemplaza todas las instancias directas de `OllamaLLM`. API keys en Keychain. `keel api-key set|get|borrar`.
+- Hito 49: `keel sos` genera archivo `.ksos` (ZIP+AES-256-GCM, PBKDF2 260k iter) con contexto completo de una persona. Diseñado para el flujo SOS: usuario en cama, no sabe qué responder, activa el botón de emergencia.
+- Hito 50: PWA `keel SOS` en `web/`. Descifra `.ksos` en el browser con WebCrypto (ningún dato sale del dispositivo). Offline-capable via Service Worker. Deployada en `keel-sos.vercel.app`.
+- Repo publicado en GitHub: `github.com/dataAnalysis2023/keel-core`.
+- Pronunciación confirmada: **"quil"** (no "kel", no dos sílabas).
+
+**Ejecutado.**
+- `src/keel/io/fuentes.py` — FuenteMensajes, ExportacionWhatsApp, TextoPlano, CSV, detectar_fuente
+- `src/keel/llm/anthropic.py`, `openai_llm.py`, `factory.py` — proveedores cloud
+- `src/keel/security/api_keys.py` — Keychain + fallback archivo 0600
+- `src/keel/io/sos.py` — construir_paquete, cifrar_sos, descifrar_sos, guardar_sos
+- `web/` — index.html, app.js, style.css, manifest.json, sw.js, icon.svg
+- 515 tests rápidos verde al cierre
+
+**Estado al cierre.** Hitos 1–50 completados. 515 tests rápidos verde. PWA en producción (keel-sos.vercel.app). Repo público en GitHub. Próximo paso: prueba end-to-end del flujo SOS completo en el celular.
