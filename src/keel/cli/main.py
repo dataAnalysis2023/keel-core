@@ -49,7 +49,7 @@ def respond(
     from keel.storage.local import cargar_perfil, cargar_persona, guardar_persona
     from keel.engine.respuesta import generar_sugerencia
     from keel.engine.presencia import analizar_tono
-    from keel.llm.ollama import OllamaLLM
+    from keel.llm.factory import crear_llm
     from keel.models.persona import ConversacionResumen
     from keel.storage.vectorial import indexar_conversacion
     from datetime import date
@@ -61,7 +61,7 @@ def respond(
         raise typer.Exit(1)
 
     persona = cargar_persona(remitente)
-    llm = OllamaLLM(modelo=modelo) if modelo else OllamaLLM()
+    llm = crear_llm(cargar_config(), modelo_override=modelo or None)
 
     if not llm.disponible():
         console.print("[red]Ollama no disponible. Ejecuta: ollama serve[/red]")
@@ -205,7 +205,7 @@ def init() -> None:
 @app.command()
 def status() -> None:
     """Muestra el estado completo del sistema: versión, LLM, datos, config, storage."""
-    from keel.llm.ollama import OllamaLLM
+    from keel.llm.factory import crear_llm
     from keel.storage.vectorial import total_indexados
     from keel.storage.local import cargar_config, keel_dir as _keel_dir
     from keel.models.persona import Persona
@@ -221,10 +221,11 @@ def status() -> None:
     except importlib.metadata.PackageNotFoundError:
         version = "dev"
 
-    # LLM
-    llm = OllamaLLM()
-    ollama_ok = llm.disponible()
-    modelos = llm.modelos_disponibles() if ollama_ok else []
+    # LLM — siempre mostramos Ollama para referencia + proveedor activo
+    from keel.llm.ollama import OllamaLLM as _OllamaLLM
+    _ollama = _OllamaLLM()
+    ollama_ok = _ollama.disponible()
+    modelos = _ollama.modelos_disponibles() if ollama_ok else []
 
     # Perfil
     perfil_ok = (directorio / "perfil.json").exists()
@@ -284,6 +285,16 @@ def status() -> None:
         ollama_str += f"  [dim]{modelo_cfg}[/dim]"
     tabla.add_row("Ollama", ollama_str)
 
+    proveedor_activo = cfg.proveedor
+    if proveedor_activo != "ollama":
+        from keel.security.api_keys import obtener_api_key
+        key = obtener_api_key(proveedor_activo)
+        key_str = "[green]✓ API key configurada[/green]" if key else "[red]✗ API key faltante[/red]"
+        modelo_cloud = cfg.modelo_cloud or "[dim](default)[/dim]"
+        tabla.add_row(f"Proveedor ({proveedor_activo})", f"{key_str}  {modelo_cloud}")
+    else:
+        tabla.add_row("Proveedor activo", "[dim]ollama (local)[/dim]")
+
     perfil_str = f"[green]✓ configurado{perfil_nombre}[/green]" if perfil_ok else "[yellow]⚠ ejecuta: keel init[/yellow]"
     tabla.add_row("Perfil", perfil_str)
 
@@ -328,7 +339,7 @@ def conversar(
     """Flujo interactivo completo: mensaje → sugerencia → edición → guardado."""
     from keel.storage.local import cargar_perfil, cargar_persona, keel_dir, cargar_config
     from keel.engine.sesion import ejecutar, guardar, abrir_en_editor, leer_mensaje_stdin, generar_resumen_automatico
-    from keel.llm.ollama import OllamaLLM
+    from keel.llm.factory import crear_llm
     from keel.cli.utils import seleccionar_remitente
     from rich.prompt import Prompt, Confirm
     from rich.rule import Rule
@@ -350,7 +361,7 @@ def conversar(
         raise typer.Exit(1)
 
     persona = cargar_persona(remitente)
-    llm = OllamaLLM(modelo=modelo) if modelo else OllamaLLM()
+    llm = crear_llm(cargar_config(), modelo_override=modelo or None)
 
     if not llm.disponible():
         console.print("[red]Ollama no disponible. Ejecuta: ollama serve[/red]")
@@ -657,7 +668,7 @@ def clip(
     from keel.io.clipboard import leer as leer_clipboard, escribir as escribir_clipboard
     from keel.storage.local import cargar_perfil, cargar_persona, keel_dir, cargar_config
     from keel.engine.sesion import ejecutar, guardar, generar_resumen_automatico
-    from keel.llm.ollama import OllamaLLM
+    from keel.llm.factory import crear_llm
     from keel.cli.utils import seleccionar_remitente
     from rich.prompt import Confirm, Prompt
     from rich.rule import Rule
@@ -696,7 +707,7 @@ def clip(
         raise typer.Exit(1)
 
     persona = cargar_persona(remitente)
-    llm = OllamaLLM(modelo=modelo) if modelo else OllamaLLM()
+    llm = crear_llm(cargar_config(), modelo_override=modelo or None)
 
     if not llm.disponible():
         console.print("[red]Ollama no disponible. Ejecuta: ollama serve[/red]")
@@ -1204,8 +1215,8 @@ def sugerir(
 
     sintesis = ""
     if not sin_llm:
-        from keel.llm.ollama import OllamaLLM
-        llm = OllamaLLM(modelo=modelo) if modelo else OllamaLLM()
+        from keel.llm.factory import crear_llm
+        llm = crear_llm(cargar_config(), modelo_override=modelo or None)
         if llm.disponible():
             prompt = construir_prompt_sugerencias(sugerencias, perfil.nombre)
             sintesis = llm.generar(prompt)
@@ -1289,8 +1300,8 @@ def pregunta(
         respuesta = respuesta_sin_llm(contexto, persona_nombre)
         console.print(Panel(respuesta, title="[bold]Historial relevante[/bold]", border_style="cyan"))
     else:
-        from keel.llm.ollama import OllamaLLM
-        llm = OllamaLLM(modelo=modelo) if modelo else OllamaLLM()
+        from keel.llm.factory import crear_llm
+        llm = crear_llm(cargar_config(), modelo_override=modelo or None)
         if not llm.disponible():
             console.print("[yellow]Ollama no disponible — mostrando historial sin síntesis.[/yellow]")
             respuesta = respuesta_sin_llm(contexto, persona_nombre)
@@ -1342,8 +1353,8 @@ def preparar(
 
     sintesis = ""
     if not sin_llm:
-        from keel.llm.ollama import OllamaLLM
-        llm = OllamaLLM(modelo=modelo) if modelo else OllamaLLM()
+        from keel.llm.factory import crear_llm
+        llm = crear_llm(cargar_config(), modelo_override=modelo or None)
         if llm.disponible():
             console.print(f"[dim]Generando síntesis para {persona}...[/dim]")
             prompt = construir_prompt_briefing(p, perfil.nombre, n_recientes=recientes)
@@ -1421,8 +1432,8 @@ def reflexionar(
 
     sintesis = ""
     if not sin_llm:
-        from keel.llm.ollama import OllamaLLM
-        llm = OllamaLLM(modelo=modelo) if modelo else OllamaLLM()
+        from keel.llm.factory import crear_llm
+        llm = crear_llm(cargar_config(), modelo_override=modelo or None)
         if llm.disponible():
             console.print("[dim]Generando síntesis...[/dim]")
             sintesis = construir_sintesis(digest, perfil.nombre, llm)
@@ -1706,8 +1717,8 @@ def ciclo(
         _log("── Ciclo completado (dry-run)")
         raise typer.Exit(0)
 
-    from keel.llm.ollama import OllamaLLM
-    llm = OllamaLLM(modelo=modelo) if modelo else OllamaLLM()
+    from keel.llm.factory import crear_llm
+    llm = crear_llm(cargar_config(), modelo_override=modelo or None)
 
     if not llm.disponible():
         _log("AVISO: Ollama no disponible — ciclo pospuesto hasta la próxima ejecución.")
@@ -1796,6 +1807,55 @@ def calendario(
 
     if contexto:
         console.print(f"\n[bold]Contexto inferido:[/bold] {contexto}")
+
+
+api_key_app = typer.Typer(help="Gestión de API keys de proveedores cloud.")
+app.add_typer(api_key_app, name="api-key")
+
+
+@api_key_app.command("set")
+def api_key_set(
+    proveedor: str = typer.Argument(..., help="anthropic | openai"),
+    key: str = typer.Argument(..., help="API key del proveedor"),
+) -> None:
+    """Guarda la API key de un proveedor cloud en el Keychain (o archivo seguro)."""
+    from keel.security.api_keys import guardar_api_key, proveedores_soportados
+    if proveedor not in proveedores_soportados():
+        console.print(f"[red]Proveedor '{proveedor}' no soportado. Opciones: {', '.join(proveedores_soportados())}[/red]")
+        raise typer.Exit(1)
+    guardar_api_key(proveedor, key)
+    console.print(f"[green]✓ API key de {proveedor} guardada.[/green]")
+    console.print(f"[dim]Para activar: keel config set proveedor {proveedor}[/dim]")
+
+
+@api_key_app.command("get")
+def api_key_get(
+    proveedor: str = typer.Argument(..., help="anthropic | openai"),
+) -> None:
+    """Muestra si hay API key configurada para un proveedor (enmascarada)."""
+    from keel.security.api_keys import obtener_api_key
+    key = obtener_api_key(proveedor)
+    if not key:
+        console.print(f"[yellow]Sin API key configurada para '{proveedor}'.[/yellow]")
+        console.print(f"[dim]Ejecuta: keel api-key set {proveedor} <tu-key>[/dim]")
+        raise typer.Exit(1)
+    mascara = key[:6] + "****" + key[-4:] if len(key) > 12 else "****"
+    console.print(f"[green]✓[/green] {proveedor}: {mascara}")
+
+
+@api_key_app.command("borrar")
+def api_key_borrar(
+    proveedor: str = typer.Argument(..., help="anthropic | openai"),
+    forzar: bool = typer.Option(False, "--forzar", "-f", help="Sin confirmación"),
+) -> None:
+    """Elimina la API key de un proveedor del Keychain y archivos locales."""
+    from keel.security.api_keys import eliminar_api_key
+    if not forzar:
+        confirmar = typer.confirm(f"¿Eliminar API key de '{proveedor}'?")
+        if not confirmar:
+            raise typer.Exit(0)
+    eliminar_api_key(proveedor)
+    console.print(f"[green]✓ API key de {proveedor} eliminada.[/green]")
 
 
 @app.command(name="mcp")
