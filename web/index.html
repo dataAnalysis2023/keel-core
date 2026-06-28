@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#dc2626">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="keel SOS">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icon.svg">
+  <link rel="stylesheet" href="./style.css">
+  <title>keel SOS</title>
+</head>
+<body>
+
+  <!-- ── Pantalla de inicio ── -->
+  <section id="pantalla-inicio">
+
+    <div class="logo-sos">
+      <span class="s">S</span>
+      <span class="os">OS</span>
+    </div>
+
+    <p class="tagline">Abre tu paquete .ksos y sabe exactamente qué decir.</p>
+
+    <label class="zona-archivo" id="zona-archivo">
+      <input type="file" id="input-archivo" accept=".ksos,.zip">
+      <div class="icono">📦</div>
+      <div class="texto-principal">Selecciona tu archivo .ksos</div>
+      <div class="texto-dim">o arrastra aquí</div>
+    </label>
+
+    <p id="nombre-archivo" class="archivo-nombre oculto"></p>
+
+    <div class="campo-pass">
+      <label for="input-pass">Passphrase</label>
+      <input type="password" id="input-pass" placeholder="Tu passphrase secreto" autocomplete="current-password">
+    </div>
+
+    <button class="btn-sos" id="btn-descifrar">Abrir SOS</button>
+
+    <p id="error-msg" class="error-msg oculto"></p>
+
+    <div id="spinner" class="spinner oculto"></div>
+
+  </section>
+
+  <!-- ── Pantalla de resultado ── -->
+  <section id="pantalla-resultado">
+
+    <div class="cabecera-resultado">
+      <div>
+        <div class="nombre-persona" id="res-nombre"></div>
+        <span class="badge-relacion oculto" id="res-relacion"></span>
+      </div>
+      <button class="btn-volver" id="btn-volver">← Volver</button>
+    </div>
+
+    <div class="contenido-resultado">
+
+      <!-- Narrativa -->
+      <div class="seccion" id="sec-narrativa">
+        <div class="seccion-titulo">Quién es</div>
+        <p class="narrativa" id="res-narrativa"></p>
+      </div>
+
+      <!-- Contexto situacional -->
+      <div class="seccion" id="sec-contexto">
+        <div class="seccion-titulo">Contexto actual</div>
+        <p id="res-contexto"></p>
+      </div>
+
+      <!-- Promesas pendientes -->
+      <div class="seccion" id="sec-promesas">
+        <div class="seccion-titulo">Pendientes</div>
+        <div id="res-promesas"></div>
+      </div>
+
+      <!-- Briefing completo -->
+      <div class="seccion">
+        <div class="seccion-titulo">Briefing completo</div>
+        <div class="briefing-md" id="res-briefing"></div>
+        <br>
+        <button class="btn-copiar" id="btn-copiar-briefing">Copiar briefing</button>
+      </div>
+
+      <!-- Meta -->
+      <p style="color:var(--texto-dim);font-size:0.75rem;text-align:center" id="res-meta"></p>
+
+    </div>
+
+  </section>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+          integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHveA=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

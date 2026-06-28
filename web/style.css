@@ -1,0 +1,266 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --rojo: #dc2626;
+  --rojo-suave: #ef4444;
+  --fondo: #0a0a0a;
+  --superficie: #141414;
+  --borde: #242424;
+  --texto: #f5f5f5;
+  --texto-dim: #737373;
+  --verde: #22c55e;
+  --amarillo: #eab308;
+}
+
+html, body {
+  height: 100%;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* ── Pantalla de carga ── */
+#pantalla-inicio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 2rem;
+  padding: 2rem;
+}
+
+.logo-sos {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.logo-sos .s { font-size: 6rem; font-weight: 900; color: var(--rojo); line-height: 1; }
+.logo-sos .os { font-size: 1.5rem; font-weight: 400; color: var(--rojo); letter-spacing: 0.5rem; }
+
+.tagline {
+  color: var(--texto-dim);
+  font-size: 0.875rem;
+  text-align: center;
+  max-width: 280px;
+}
+
+.zona-archivo {
+  width: 100%;
+  max-width: 360px;
+  border: 2px dashed var(--borde);
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.zona-archivo:hover, .zona-archivo.drag-over {
+  border-color: var(--rojo);
+  background: rgba(220, 38, 38, 0.05);
+}
+
+.zona-archivo input { display: none; }
+
+.zona-archivo .icono { font-size: 2.5rem; margin-bottom: 0.75rem; }
+.zona-archivo .texto-principal { font-size: 1rem; font-weight: 600; margin-bottom: 0.25rem; }
+.zona-archivo .texto-dim { color: var(--texto-dim); font-size: 0.8rem; }
+
+.campo-pass {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.campo-pass label { font-size: 0.8rem; color: var(--texto-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+
+.campo-pass input {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  color: var(--texto);
+  font-size: 1rem;
+  padding: 0.875rem 1rem;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+
+.campo-pass input:focus { border-color: var(--rojo); }
+
+.btn-sos {
+  width: 100%;
+  max-width: 360px;
+  background: var(--rojo);
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.125rem;
+  font-weight: 700;
+  padding: 1rem;
+  transition: background 0.2s, transform 0.1s;
+  letter-spacing: 0.05em;
+}
+
+.btn-sos:hover { background: var(--rojo-suave); }
+.btn-sos:active { transform: scale(0.98); }
+.btn-sos:disabled { background: var(--borde); color: var(--texto-dim); cursor: not-allowed; }
+
+.archivo-nombre {
+  font-size: 0.8rem;
+  color: var(--verde);
+  text-align: center;
+}
+
+.error-msg {
+  color: var(--rojo-suave);
+  font-size: 0.85rem;
+  text-align: center;
+  max-width: 360px;
+}
+
+/* ── Pantalla de resultado ── */
+#pantalla-resultado {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.cabecera-resultado {
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borde);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.cabecera-resultado .nombre-persona {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.badge-relacion {
+  background: rgba(220, 38, 38, 0.15);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  border-radius: 999px;
+  color: var(--rojo-suave);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn-volver {
+  background: transparent;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  color: var(--texto-dim);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.75rem;
+}
+
+.contenido-resultado {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 640px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.seccion {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  padding: 1.25rem;
+}
+
+.seccion-titulo {
+  color: var(--texto-dim);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+}
+
+.narrativa { font-size: 1rem; line-height: 1.6; }
+
+.promesa-item {
+  border-top: 1px solid var(--borde);
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  align-items: flex-start;
+}
+
+.promesa-item:first-child { border-top: none; padding-top: 0; }
+
+.semaforo { font-size: 0.9rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+.briefing-md { font-size: 0.9rem; line-height: 1.7; }
+.briefing-md h1, .briefing-md h2, .briefing-md h3 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--texto-dim);
+  margin: 1rem 0 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.briefing-md h1:first-child, .briefing-md h2:first-child { margin-top: 0; }
+.briefing-md ul { padding-left: 1.2rem; }
+.briefing-md li { margin-bottom: 0.2rem; }
+.briefing-md strong { color: #fff; }
+
+.btn-copiar {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  color: var(--texto);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.6rem 1rem;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+
+.btn-copiar:hover { border-color: var(--texto-dim); }
+.btn-copiar.copiado { border-color: var(--verde); color: var(--verde); }
+
+/* ── Spinner ── */
+.spinner {
+  width: 24px; height: 24px;
+  border: 2px solid var(--borde);
+  border-top-color: var(--rojo);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Utils ── */
+.oculto { display: none !important; }
