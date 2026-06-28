@@ -754,9 +754,7 @@ def importar(
     dry_run: bool = typer.Option(False, "--dry-run", help="Muestra qué importaría sin guardar"),
 ) -> None:
     """Importa historial de conversaciones desde WhatsApp, texto plano o CSV."""
-    from keel.io.importar import (
-        parsear_whatsapp, parsear_texto, parsear_csv, agrupar_en_dia,
-    )
+    from keel.io.fuentes import detectar_fuente, fuente_para_formato
     from keel.storage.local import cargar_persona, guardar_persona
     from keel.storage.vectorial import indexar_conversacion
     from keel.models.persona import ConversacionResumen
@@ -770,34 +768,23 @@ def importar(
         raise typer.Exit(1)
 
     contenido = ruta.read_text(encoding="utf-8", errors="replace")
-
-    # Detectar formato
-    fmt = formato
-    if fmt == "auto":
-        if ruta.suffix.lower() == ".csv":
-            fmt = "csv"
-        elif re.search(r"[\[\(]\d{1,2}[/\-.]\d{1,2}", contenido[:500]):
-            fmt = "whatsapp"
-        else:
-            fmt = "texto"
-
     hoy = date.today().isoformat()
 
-    if fmt == "whatsapp":
-        mensajes = parsear_whatsapp(contenido)
-        if agrupar:
-            resumenes = agrupar_en_dia(mensajes, persona)
-        else:
-            resumenes = [
-                {"fecha": m.fecha, "resumen": m.texto[:120], "temas": []}
-                for m in mensajes if m.remitente.lower() == persona.lower()
-            ]
-    elif fmt == "csv":
-        mensajes = parsear_csv(contenido)
-        resumenes = [{"fecha": m.fecha, "resumen": m.texto, "temas": []} for m in mensajes]
+    # Instanciar la fuente correcta
+    if formato == "auto":
+        fuente = detectar_fuente(contenido, ruta.suffix.lower(), fecha_defecto=hoy)
     else:
-        mensajes = parsear_texto(contenido, hoy)
-        resumenes = [{"fecha": m.fecha, "resumen": m.texto[:120], "temas": []} for m in mensajes]
+        fuente = fuente_para_formato(formato, fecha_defecto=hoy)
+
+    mensajes = fuente.leer(contenido)
+
+    if agrupar:
+        resumenes = fuente.agrupar(mensajes, persona)
+    else:
+        resumenes = [
+            {"fecha": m.fecha, "resumen": m.texto[:120], "temas": []}
+            for m in mensajes if m.remitente.lower() == persona.lower()
+        ]
 
     if not resumenes:
         console.print(f"[yellow]No se encontraron mensajes de '{persona}' en el archivo.[/yellow]")

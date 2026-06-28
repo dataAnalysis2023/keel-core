@@ -1,17 +1,23 @@
-"""Parsers para importar historial de conversaciones externas."""
+"""Parsers para importar historial de conversaciones externas.
+
+MensajeImportado vive en fuentes.py y se re-exporta aquí para
+retrocompatibilidad con código existente.
+"""
 
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
 from datetime import datetime
 
+from keel.io.fuentes import MensajeImportado  # re-export
 
-@dataclass
-class MensajeImportado:
-    fecha: str          # YYYY-MM-DD
-    remitente: str
-    texto: str
+__all__ = [
+    "MensajeImportado",
+    "parsear_whatsapp",
+    "parsear_texto",
+    "parsear_csv",
+    "agrupar_en_dia",
+]
 
 
 # ── WhatsApp ──────────────────────────────────────────────────────────────────
