@@ -44,6 +44,7 @@ mcp = FastMCP(
         "Usa keel_alias_list para ver todos los alias definidos. "
         "Usa keel_alias_borrar para eliminar un alias. "
         "Usa keel_sintetizar_persona para inferir la narrativa y tipo de relación de una persona desde su historial. "
+        "Usa keel_sos para generar un paquete SOS cifrado (.ksos) con el contexto completo de una persona, listo para usar en móvil. "
         "Usa keel_calendario_ver para leer los eventos próximos del Calendario de macOS e inferir el contexto situacional del usuario. "
         "Usa keel_calendario_contexto para obtener solo el contexto situacional inferido (período de campaña, lanzamiento, etc.)."
     ),
@@ -816,6 +817,67 @@ def keel_calendario_contexto(dias: int = 7) -> str:
 
     contexto = inferir_contexto_agenda(eventos, dias=dias)
     return contexto or "Semana sin patrón contextual especial."
+
+
+@mcp.tool()
+def keel_sos(persona: str, mensaje: str = "", passphrase: str = "") -> str:
+    """Genera un paquete SOS cifrado con el contexto de una persona.
+
+    Devuelve la ruta del archivo .ksos generado en el Desktop del usuario.
+    Si se incluye un mensaje recibido, también sugiere una respuesta.
+
+    Args:
+        persona: Nombre de la persona (o alias).
+        mensaje: Mensaje recibido que no sabes cómo responder (opcional).
+        passphrase: Passphrase para cifrar el paquete (obligatorio para cifrado).
+    """
+    from keel.storage.local import cargar_perfil, cargar_persona
+    from keel.io.sos import guardar_sos, construir_paquete
+    from pathlib import Path
+
+    p = cargar_persona(persona)
+    if p is None:
+        return f"ERROR: Persona '{persona}' no encontrada."
+
+    perfil = cargar_perfil()
+    lineas = []
+
+    # Briefing rápido
+    if p.narrativa:
+        lineas.append(f"**{p.nombre}**: {p.narrativa}")
+    if p.tipo_relacion:
+        lineas.append(f"Relación: {p.tipo_relacion}")
+    pendientes = [pr for pr in p.promesas_pendientes if not pr.completada]
+    if pendientes:
+        lineas.append(f"Pendientes: " + "; ".join(pr.descripcion for pr in pendientes[:3]))
+
+    # Sugerencia de respuesta
+    if mensaje:
+        try:
+            from keel.storage.local import cargar_config
+            from keel.llm.factory import crear_llm
+            from keel.engine.presencia import analizar_presencia
+            from keel.engine.respuesta import construir_prompt
+            cfg = cargar_config()
+            llm = crear_llm(cfg)
+            if llm.disponible():
+                tono = analizar_presencia(mensaje)
+                prompt = construir_prompt(mensaje, p, perfil, tono, [])
+                sugerencia = llm.generar(prompt)
+                lineas.append(f"\n**Sugerencia de respuesta:**\n{sugerencia.strip()}")
+        except Exception as e:
+            lineas.append(f"(Sin sugerencia: {e})")
+
+    # Generar archivo .ksos si hay passphrase
+    if passphrase:
+        nombre = f"keel-sos-{p.nombre.lower().replace(' ', '-')}.ksos"
+        ruta = Path.home() / "Desktop" / nombre
+        tamanio = guardar_sos(ruta, p, perfil, passphrase)
+        lineas.append(f"\n✓ Paquete SOS: {ruta} ({tamanio / 1024:.1f} KB)")
+    else:
+        lineas.append("\n(passphrase no proporcionado — archivo .ksos no generado)")
+
+    return "\n".join(lineas)
 
 
 # ─── Prompts ─────────────────────────────────────────────────────────────────

@@ -1809,6 +1809,111 @@ def calendario(
         console.print(f"\n[bold]Contexto inferido:[/bold] {contexto}")
 
 
+@app.command()
+def sos(
+    persona: str = typer.Argument(None, help="Nombre de la persona (picker si se omite)"),
+    mensaje: str = typer.Option("", "--mensaje", "-m", help="Mensaje recibido que no sabes cómo responder"),
+    output: str = typer.Option("", "--output", "-o", help="Ruta destino del archivo .ksos"),
+    passphrase: str = typer.Option("", "--passphrase", "-p", help="Passphrase de cifrado (se pide si se omite)"),
+    sin_cifrar: bool = typer.Option(False, "--sin-cifrar", help="Genera ZIP sin cifrar (solo desarrollo)"),
+) -> None:
+    """Genera un paquete SOS cifrado con el contexto de una persona para uso en móvil.
+
+    El archivo .ksos contiene todo lo que keel sabe de esa persona:
+    historial, promesas, síntesis relacional y briefing pre-conversación.
+    Solo tú puedes abrirlo con tu passphrase.
+    """
+    from keel.storage.local import cargar_perfil, cargar_persona, listar_personas
+    from keel.io.sos import guardar_sos, construir_paquete, empaquetar
+    from keel.engine.respuesta import construir_prompt, Motor
+    from keel.llm.factory import crear_llm
+    from rich.rule import Rule
+    from pathlib import Path
+    import typer as _typer
+
+    # Picker de persona
+    if not persona:
+        personas = listar_personas()
+        if not personas:
+            console.print("[yellow]No hay personas registradas. Usa `keel persona add`.[/yellow]")
+            raise typer.Exit(1)
+        console.print("\n[bold]¿Para quién es el SOS?[/bold]\n")
+        for i, n in enumerate(personas, 1):
+            console.print(f"  {i}) {n}")
+        idx = typer.prompt("\nNúmero")
+        try:
+            persona = personas[int(idx) - 1]
+        except (ValueError, IndexError):
+            console.print("[red]Selección inválida.[/red]")
+            raise typer.Exit(1)
+
+    p = cargar_persona(persona)
+    if p is None:
+        console.print(f"[red]Persona '{persona}' no encontrada.[/red]")
+        raise typer.Exit(1)
+
+    perfil = cargar_perfil()
+
+    # Mostrar briefing en pantalla
+    console.print()
+    console.print(Rule(f"[bold]SOS — {p.nombre}[/bold]"))
+    console.print()
+
+    if p.narrativa:
+        console.print(f"[bold]Quién es:[/bold] {p.narrativa}")
+        console.print()
+    if p.tipo_relacion:
+        console.print(f"[dim]Relación:[/dim] {p.tipo_relacion}")
+    if p.contexto_situacional:
+        console.print(f"[dim]Contexto:[/dim] {p.contexto_situacional}")
+
+    pendientes = [pr for pr in p.promesas_pendientes if not pr.completada]
+    if pendientes:
+        console.print(f"\n[bold]Pendiente con {p.nombre}:[/bold]")
+        for pr in pendientes[:3]:
+            console.print(f"  • {pr.descripcion}" + (f" [{pr.fecha_limite}]" if pr.fecha_limite else ""))
+
+    # Sugerencia de respuesta si hay mensaje
+    if mensaje:
+        console.print(f"\n[bold]Mensaje recibido:[/bold] {mensaje}\n")
+        try:
+            cfg = cargar_config()
+            llm = crear_llm(cfg)
+            if llm.disponible():
+                from keel.engine.presencia import analizar_presencia
+                from keel.engine.respuesta import construir_prompt as _prompt
+                tono = analizar_presencia(mensaje)
+                prompt = _prompt(mensaje, p, perfil, tono, [])
+                console.print("[dim]Generando sugerencia...[/dim]")
+                sugerencia = llm.generar(prompt)
+                console.print(f"\n[bold]Sugerencia:[/bold]\n{sugerencia.strip()}")
+            else:
+                console.print("[dim](Ollama no disponible — sin sugerencia de respuesta)[/dim]")
+        except Exception as e:
+            console.print(f"[dim]Sin sugerencia: {e}[/dim]")
+
+    # Generar archivo .ksos
+    console.print()
+    if not passphrase and not sin_cifrar:
+        passphrase = typer.prompt("Passphrase para cifrar el paquete SOS", hide_input=True, confirmation_prompt=True)
+
+    nombre_archivo = f"keel-sos-{p.nombre.lower().replace(' ', '-')}.ksos"
+    ruta_output = Path(output) if output else Path.home() / "Desktop" / nombre_archivo
+
+    if sin_cifrar:
+        paquete = construir_paquete(p, perfil)
+        zip_bytes = empaquetar(paquete)
+        ruta_zip = ruta_output.with_suffix(".zip")
+        ruta_zip.write_bytes(zip_bytes)
+        console.print(f"[yellow]ZIP sin cifrar guardado:[/yellow] {ruta_zip}")
+        console.print(f"[dim]Tamaño: {len(zip_bytes) / 1024:.1f} KB[/dim]")
+    else:
+        tamanio = guardar_sos(ruta_output, p, perfil, passphrase)
+        console.print(f"[green]✓ Paquete SOS guardado:[/green] {ruta_output}")
+        console.print(f"[dim]Tamaño: {tamanio / 1024:.1f} KB · cifrado AES-256[/dim]")
+        console.print(f"[dim]Comparte este archivo con tu app móvil y usa tu passphrase para abrirlo.[/dim]")
+
+
 api_key_app = typer.Typer(help="Gestión de API keys de proveedores cloud.")
 app.add_typer(api_key_app, name="api-key")
 
