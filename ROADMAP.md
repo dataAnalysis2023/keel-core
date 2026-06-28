@@ -465,7 +465,19 @@ sin que el usuario tenga que clasificarla explícitamente.
 - [x] 30 tests nuevos en `tests/test_fuentes.py`; `tests/test_importar.py` sin modificar (retrocompat verificada)
 - [x] 469 tests rápidos verde
 
-## Hito 48 — Cloud LLM opt-in (pendiente)
+## Hito 48 — Cloud LLM opt-in (completado 2026-06-28)
+
+- [x] `AnthropicLLM` en `src/keel/llm/anthropic.py` — lazy import del SDK; modelo default `claude-haiku-4-5-20251001`
+- [x] `OpenAILLM` en `src/keel/llm/openai_llm.py` — lazy import del SDK; modelo default `gpt-4o-mini`
+- [x] `crear_llm(config, modelo_override)` en `src/keel/llm/factory.py` — instancia el proveedor según `config.proveedor`
+- [x] `src/keel/security/api_keys.py` — `guardar_api_key`, `obtener_api_key`, `eliminar_api_key` vía Keychain + fallback 0600
+- [x] `ConfigKeel` con dos nuevos campos: `proveedor` (default `"ollama"`) y `modelo_cloud` (default `""`)
+- [x] Todos los comandos CLI reemplazados de `OllamaLLM()` a `crear_llm(cargar_config())`
+- [x] `keel api-key set|get|borrar` — gestión de API keys desde terminal
+- [x] `keel status` muestra el proveedor activo y estado de API key si es cloud
+- [x] Deps opcionales en `pyproject.toml`: `pip install keel-core[anthropic]`, `[openai]` o `[cloud]`
+- [x] 32 tests nuevos (`test_llm_cloud.py` + `test_api_keys.py`)
+- [x] 501 tests rápidos verde
 
 ## Diferido / fuera de scope inicial
 
